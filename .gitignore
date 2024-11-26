@@ -8,6 +8,7 @@ __pycache__/
 
 .DS_Store
 Data
+d3rlpy_data
 
 # Distribution / packaging
 .Python
