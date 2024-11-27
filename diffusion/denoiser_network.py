@@ -1,4 +1,7 @@
-# Denoiser networks for diffusion.
+"""
+Denoiser networks for diffusion.
+Code from https://github.com/conglu1997/SynthER
+"""
 
 import math
 from typing import Optional

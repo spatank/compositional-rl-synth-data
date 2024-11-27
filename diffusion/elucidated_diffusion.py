@@ -2,6 +2,7 @@
 Main diffusion code.
 Code was adapted from https://github.com/lucidrains/denoising-diffusion-pytorch
 """
+
 import math
 import pathlib
 from multiprocessing import cpu_count
