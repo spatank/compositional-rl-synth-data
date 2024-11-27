@@ -9,7 +9,7 @@ __pycache__/
 .DS_Store
 Data
 d3rlpy_data
-results
+results*
 wandb
 
 # Distribution / packaging
