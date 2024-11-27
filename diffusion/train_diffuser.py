@@ -1,4 +1,4 @@
-# Train diffusion model on D4RL transitions.
+# Train diffusion model on CompoSuite transitions.
 import argparse
 import pathlib
 from typing import Tuple
