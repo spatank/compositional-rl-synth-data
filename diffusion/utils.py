@@ -3,7 +3,7 @@ Utilities for diffusion.
 Code adapted from https://github.com/conglu1997/SynthER
 """
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 
 import os
 import h5py
