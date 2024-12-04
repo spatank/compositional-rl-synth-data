@@ -48,7 +48,7 @@ class TrainConfig:
     # actor update delay
     policy_freq: int = 2
     # total gradient updates during training
-    max_timesteps: int = int(1e6)
+    max_timesteps: int = 50000
     # maximum size of the replay buffer
     buffer_size: int = 2_000_000
     # training batch size
