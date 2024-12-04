@@ -16,7 +16,7 @@ from torch import nn
 # GIN-required imports.
 from diffusion.denoiser_network import ResidualMLPDenoiser
 from diffusion.elucidated_diffusion import ElucidatedDiffusion
-from diffusion.norm import normalizer_factory
+from diffusion.norm import normalizer_factory, MinMaxNormalizer
 
 
 @gin.configurable
