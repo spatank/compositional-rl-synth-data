@@ -10,6 +10,7 @@ import h5py
 import gin
 import gym
 import numpy as np
+from tqdm import tqdm
 import torch
 from torch import nn
 
@@ -37,6 +38,45 @@ def load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, ta
             assert len(data_dict[k]) == 1000000, f"Key {k} has wrong length"
 
     return data_dict
+
+@gin.configurable
+def load_multiple_composuite_datasets(base_path, dataset_type, robots, objs, obsts, tasks):
+
+    tuples = []
+    for robot in robots:
+        for obj in objs:
+            for obst in obsts:
+                for task in tasks:
+                    tuples.append((robot, obj, obst, task))
+
+    datasets = []
+
+    for robot, obj, obst, task in tqdm(tuples, desc="Loading data"):
+        datasets.append(load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, task))
+
+    return datasets
+
+
+def load_single_synthetic_dataset(base_path, robot, obj, obst, task):
+    data_path = os.path.join(base_path, f"{robot}_{obj}_{obst}_{task}", "samples.npz")
+    return np.load(data_path)
+
+
+def load_multiple_synthetic_datasets(base_path, robots, objs, obsts, tasks):
+
+    tuples = []
+    for robot in robots:
+        for obj in objs:
+            for obst in obsts:
+                for task in tasks:
+                    tuples.append((robot, obj, obst, task))
+                    
+    datasets = []
+
+    for robot, obj, obst, task in tqdm(tuples, desc="Loading data"):
+        datasets.append(load_single_synthetic_dataset(base_path, robot, obj, obst, task))
+
+    return datasets
 
 
 @gin.configurable
