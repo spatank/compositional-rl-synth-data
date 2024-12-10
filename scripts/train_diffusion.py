@@ -7,7 +7,7 @@ import gin
 from diffusion.utils import *
 from diffusion.elucidated_diffusion import Trainer
 from diffusion.train_diffuser import SimpleDiffusionGenerator
-from CompoSuite import composuite
+import composuite
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--gin_config_files', nargs='*', type=str, default=['config/diffusion.gin'])
     parser.add_argument('--gin_params', nargs='*', type=str, default=[], help='Additional gin parameters.')
 
-    # robot learning environment
+    # Environment
     parser.add_argument('--dataset_type', type=str, required=True, help='Dataset type (e.g., expert data).')
     parser.add_argument('--robot', type=str, default='IIWA', help='Robot type for CompoSuite.')
     parser.add_argument('--obj', type=str, default='Hollowbox', help='Object type for task.')

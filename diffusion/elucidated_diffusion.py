@@ -307,7 +307,8 @@ class Trainer(object):
                 self.batch_size = train_batch_size
             print(f'Using batch size: {self.batch_size}')
             # dataset and dataloader
-            dl = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=cpu_count())
+            # dl = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=cpu_count())
+            dl = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=8)
             dl = self.accelerator.prepare(dl)
             self.dl = cycle(dl)
         else:
