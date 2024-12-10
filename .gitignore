@@ -14,6 +14,10 @@ Data
 d3rlpy_data
 results*
 wandb
+requirements_cluster.txt
+*.png
+# contains files/folders to exclude when transfering to cluster
+exclude.txt
 
 # Distribution / packaging
 .Python
