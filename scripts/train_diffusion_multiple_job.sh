@@ -10,13 +10,13 @@
 
 source /home/spatank/compositional-rl-synth-data/venv/bin/activate
 
-python /home/spatank/compositional-rl-synth-data/scripts/train_diffusion.py \
+python /home/spatank/compositional-rl-synth-data/scripts/train_diffusion_multiple.py \
     --base_data_path /mnt/kostas-graid/datasets/spatank \
     --base_results_folder /home/spatank/compositional-rl-synth-data/results \
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
-    --robot IIWA \
-    --obj Hollowbox \
-    --obst None \
-    --task PickPlace \
+    --robots IIWA Jaco \
+    --objs Box Dumbbell Hollowbox Plate \
+    --obsts None \
+    --tasks PickPlace Push \
     --seed 42

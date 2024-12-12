@@ -19,14 +19,13 @@ from diffusion.denoiser_network import ResidualMLPDenoiser
 from diffusion.elucidated_diffusion import ElucidatedDiffusion
 from diffusion.norm import normalizer_factory, MinMaxNormalizer
 
-
 @gin.configurable
 def load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, task):
 
     keys = ["observations", "actions", "rewards", "successes", "terminals", "timeouts"]
-
+    dataset_folder = f"{dataset_type}-{robot}-offline-comp-data"
     data_path = os.path.join(
-        base_path, dataset_type, f"{robot}_{obj}_{obst}_{task}", "data.hdf5"
+        base_path, dataset_folder, f"{robot}_{obj}_{obst}_{task}", "data.hdf5"
     )
 
     data_dict = {}
