@@ -1,5 +1,7 @@
 import argparse
 import pathlib
+from itertools import product
+from collections import defaultdict
 import torch
 import wandb
 import numpy as np
@@ -20,10 +22,10 @@ if __name__ == '__main__':
 
     # Environment
     parser.add_argument('--dataset_type', type=str, required=True, help='Dataset type (e.g., expert data).')
-    parser.add_argument('--robot', type=str, default='IIWA', help='Robot type for CompoSuite.')
-    parser.add_argument('--obj', type=str, default='Hollowbox', help='Object type for task.')
-    parser.add_argument('--obst', type=str, default='None', help='Obstacle type for task.')
-    parser.add_argument('--task', type=str, default='PickPlace', help='Task type.')
+    parser.add_argument('--robots', nargs='+', type=str, required=True, help='List of robots.')
+    parser.add_argument('--objs', nargs='+', type=str, required=True, help='List of objects.')
+    parser.add_argument('--obsts', nargs='+', type=str, required=True, help='List of obstacles.')
+    parser.add_argument('--tasks', nargs='+', type=str, required=True, help='List of tasks.')
 
     parser.add_argument('--use_gpu', action='store_true', default=True, help='Use GPU if available.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -36,7 +38,11 @@ if __name__ == '__main__':
 
     gin.parse_config_files_and_bindings(args.gin_config_files, args.gin_params)
 
-    results_folder = pathlib.Path(args.base_results_folder) / f"{args.robot}_{args.obj}_{args.obst}_{args.task}"
+    base_results_path = pathlib.Path(args.base_results_folder)
+    idx = 1
+    while (base_results_path / f"multidata_{idx}").exists():
+        idx += 1
+    results_folder = base_results_path / f"multidata_{idx}"
     results_folder.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(args.seed)
@@ -44,16 +50,25 @@ if __name__ == '__main__':
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
 
-    dataset = load_single_composuite_dataset(
+    datasets = load_multiple_composuite_datasets(
         base_path=args.base_data_path,
         dataset_type=args.dataset_type,
-        robot=args.robot,
-        obj=args.obj,
-        obst=args.obst,
-        task=args.task
-    )
-    dataset = transitions_dataset(dataset)
-    inputs = make_inputs(dataset)
+        robots=args.robots, 
+        objs=args.objs, 
+        obsts=args.obsts, 
+        tasks=args.tasks)
+    
+    datasets = [transitions_dataset(dataset) for dataset in datasets]
+
+    combined_data_dict = defaultdict(list)
+
+    for idx, data in enumerate(datasets):
+        for key in data.keys():
+            combined_data_dict[key].append(data[key])
+
+    combined_transitions_datasets = {key: np.concatenate(values, axis=0) for key, values in combined_data_dict.items()}
+    print('Building training data.')
+    inputs = make_inputs(combined_transitions_datasets)
     inputs = torch.from_numpy(inputs).float()
     dataset = torch.utils.data.TensorDataset(inputs)
 
@@ -70,15 +85,21 @@ if __name__ == '__main__':
     trainer = Trainer(diffusion, dataset, results_folder=str(results_folder))
     trainer.train()
 
-    env = composuite.make(args.robot, args.obj, args.obst, args.task, use_task_id_obs=True, ignore_done=False)
-    generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
-    observations, actions, rewards, next_observations, terminals = generator.sample(num_samples=100000)
+    combinations = list(product(args.robots, args.objs, args.obsts, args.tasks))
 
-    np.savez_compressed(
-        results_folder / 'samples.npz',
-        observations=observations,
-        actions=actions,
-        rewards=rewards,
-        next_observations=next_observations,
-        terminals=terminals
-    )
+    for robot, obj, obst, task in combinations:
+        task_folder = results_folder / f"{robot}_{obj}_{obst}_{task}"
+        task_folder.mkdir(parents=True, exist_ok=True)
+
+        env = composuite.make(robot, obj, obst, task, use_task_id_obs=True, ignore_done=False)
+        generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
+        observations, actions, rewards, next_observations, terminals = generator.sample(num_samples=100000)
+
+        np.savez_compressed(
+            task_folder / 'samples.npz',
+            observations=observations,
+            actions=actions,
+            rewards=rewards,
+            next_observations=next_observations,
+            terminals=terminals
+        )

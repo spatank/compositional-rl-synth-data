@@ -122,22 +122,43 @@ def transitions_dataset(dataset):
         'terminals': np.array(done_),
     }
 
+# @gin.configurable
+# def make_inputs(dataset, modelled_terminals: bool = True) -> np.ndarray:
+
+#     obs = dataset['observations']
+#     actions = dataset['actions']
+#     next_obs = dataset['next_observations']
+#     rewards = dataset['rewards']
+#     inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
+
+#     if modelled_terminals:
+#         terminals = dataset['terminals'].astype(np.float32)
+#         inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
+        
+#     return inputs
 
 @gin.configurable
-def make_inputs(dataset, modelled_terminals: bool = True) -> np.ndarray:
+def make_inputs(dataset, modelled_terminals=True):
 
     obs = dataset['observations']
     actions = dataset['actions']
     next_obs = dataset['next_observations']
     rewards = dataset['rewards']
-    inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
 
+    num_samples = obs.shape[0]
+    input_dim = obs.shape[1] + actions.shape[1] + next_obs.shape[1] + 1 + (1 if modelled_terminals else 0)
+    inputs = np.empty((num_samples, input_dim), dtype=np.float32)
+    
+    inputs[:, :obs.shape[1]] = obs
+    inputs[:, obs.shape[1]:obs.shape[1] + actions.shape[1]] = actions
+    inputs[:, obs.shape[1] + actions.shape[1]] = rewards
+    inputs[:, obs.shape[1] + actions.shape[1] + 1:obs.shape[1] + actions.shape[1] + 1 + next_obs.shape[1]] = next_obs
+    
     if modelled_terminals:
         terminals = dataset['terminals'].astype(np.float32)
-        inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
-        
+        inputs[:, -1] = terminals
+    
     return inputs
-
 
 # Convert diffusion samples back to (s, a, r, s') format.
 @gin.configurable
