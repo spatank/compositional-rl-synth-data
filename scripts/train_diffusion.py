@@ -1,6 +1,5 @@
 import argparse
 import pathlib
-from itertools import product
 from collections import defaultdict
 import torch
 import wandb
@@ -26,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--objs', nargs='+', type=str, required=True, help='List of objects.')
     parser.add_argument('--obsts', nargs='+', type=str, required=True, help='List of obstacles.')
     parser.add_argument('--tasks', nargs='+', type=str, required=True, help='List of tasks.')
+    parser.add_argument('--exclude', nargs='+', type=str, required=True, help='List of environments to exclude.')
 
     parser.add_argument('--use_gpu', action='store_true', default=True, help='Use GPU if available.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -50,13 +50,14 @@ if __name__ == '__main__':
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
 
-    datasets = load_multiple_composuite_datasets(
-        base_path=args.base_data_path,
-        dataset_type=args.dataset_type,
-        robots=args.robots, 
-        objs=args.objs, 
-        obsts=args.obsts, 
-        tasks=args.tasks)
+    exclude_set = {tuple(item.split('-')) for item in args.exclude}
+    combinations = list(product(args.robots, args.objs, args.obsts, args.tasks))
+    combinations_subset = [combination for combination in combinations if combination not in exclude_set]
+    datasets = []
+    for combination in tqdm(combinations_subset, desc="Loading data"):
+        print('Loading:', combination)
+        robot, obj, obst, task = combination
+        datasets.append(load_single_composuite_dataset(args.base_data_path, args.dataset_type, robot, obj, obst, task))
     
     datasets = [transitions_dataset(dataset) for dataset in datasets]
 
@@ -85,9 +86,8 @@ if __name__ == '__main__':
     trainer = Trainer(diffusion, dataset, results_folder=str(results_folder))
     trainer.train()
 
-    combinations = list(product(args.robots, args.objs, args.obsts, args.tasks))
-
     for robot, obj, obst, task in combinations:
+        print('Generating synthetic data:', robot, obj, obst, task)
         task_folder = results_folder / f"{robot}_{obj}_{obst}_{task}"
         task_folder.mkdir(parents=True, exist_ok=True)
 

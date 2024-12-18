@@ -4,7 +4,7 @@ Code adapted from https://github.com/conglu1997/SynthER
 """
 
 from typing import Optional, List, Union, Tuple
-
+from itertools import product
 import os
 import h5py
 import gin
@@ -23,10 +23,12 @@ from diffusion.norm import normalizer_factory, MinMaxNormalizer
 def load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, task):
 
     keys = ["observations", "actions", "rewards", "successes", "terminals", "timeouts"]
-    dataset_folder = f"{dataset_type}-{robot}-offline-comp-data"
+    dataset_folder = f"{dataset_type}-{robot.lower()}-offline-comp-data"
     data_path = os.path.join(
         base_path, dataset_folder, f"{robot}_{obj}_{obst}_{task}", "data.hdf5"
     )
+
+    print(data_path)
 
     data_dict = {}
 
@@ -41,16 +43,9 @@ def load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, ta
 @gin.configurable
 def load_multiple_composuite_datasets(base_path, dataset_type, robots, objs, obsts, tasks):
 
-    tuples = []
-    for robot in robots:
-        for obj in objs:
-            for obst in obsts:
-                for task in tasks:
-                    tuples.append((robot, obj, obst, task))
-
+    combinations = list(product(robots, objs, obsts, tasks))
     datasets = []
-
-    for robot, obj, obst, task in tqdm(tuples, desc="Loading data"):
+    for robot, obj, obst, task in tqdm(combinations, desc="Loading data"):
         datasets.append(load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, task))
 
     return datasets
@@ -121,21 +116,6 @@ def transitions_dataset(dataset):
         'rewards': np.array(reward_),
         'terminals': np.array(done_),
     }
-
-# @gin.configurable
-# def make_inputs(dataset, modelled_terminals: bool = True) -> np.ndarray:
-
-#     obs = dataset['observations']
-#     actions = dataset['actions']
-#     next_obs = dataset['next_observations']
-#     rewards = dataset['rewards']
-#     inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
-
-#     if modelled_terminals:
-#         terminals = dataset['terminals'].astype(np.float32)
-#         inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
-        
-#     return inputs
 
 @gin.configurable
 def make_inputs(dataset, modelled_terminals=True):
