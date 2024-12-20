@@ -12,6 +12,7 @@ configs
 .DS_Store
 Data
 d3rlpy_data
+cluster_results*
 results*
 wandb
 requirements_cluster.txt

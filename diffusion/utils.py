@@ -28,8 +28,6 @@ def load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, ta
         base_path, dataset_folder, f"{robot}_{obj}_{obst}_{task}", "data.hdf5"
     )
 
-    print(data_path)
-
     data_dict = {}
 
     with h5py.File(data_path, "r") as dataset_file:
@@ -53,7 +51,7 @@ def load_multiple_composuite_datasets(base_path, dataset_type, robots, objs, obs
 
 def load_single_synthetic_dataset(base_path, robot, obj, obst, task):
     data_path = os.path.join(base_path, f"{robot}_{obj}_{obst}_{task}", "samples.npz")
-    return np.load(data_path)
+    return dict(np.load(data_path))
 
 
 def load_multiple_synthetic_datasets(base_path, robots, objs, obsts, tasks):

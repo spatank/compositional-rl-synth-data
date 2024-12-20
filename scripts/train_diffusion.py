@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--objs', nargs='+', type=str, required=True, help='List of objects.')
     parser.add_argument('--obsts', nargs='+', type=str, required=True, help='List of obstacles.')
     parser.add_argument('--tasks', nargs='+', type=str, required=True, help='List of tasks.')
-    parser.add_argument('--exclude', nargs='+', type=str, required=True, help='List of environments to exclude.')
+    parser.add_argument('--exclude', nargs='+', type=str, default=[], help='List of environments to exclude.')
 
     parser.add_argument('--use_gpu', action='store_true', default=True, help='Use GPU if available.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -40,9 +40,9 @@ if __name__ == '__main__':
 
     base_results_path = pathlib.Path(args.base_results_folder)
     idx = 1
-    while (base_results_path / f"multidata_{idx}").exists():
+    while (base_results_path / f"cluster_multidata_{idx}").exists():
         idx += 1
-    results_folder = base_results_path / f"multidata_{idx}"
+    results_folder = base_results_path / f"cluster_multidata_{idx}"
     results_folder.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(args.seed)
@@ -50,7 +50,9 @@ if __name__ == '__main__':
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
 
-    exclude_set = {tuple(item.split('-')) for item in args.exclude}
+    exclude_set = set()
+    if args.exclude:
+        exclude_set = {tuple(item.split('-')) for item in args.exclude}
     combinations = list(product(args.robots, args.objs, args.obsts, args.tasks))
     combinations_subset = [combination for combination in combinations if combination not in exclude_set]
     datasets = []
