@@ -400,10 +400,11 @@ class Trainer(object):
                 total_loss = 0.
 
                 for _ in range(self.gradient_accumulate_every):
-                    data = (next(self.dl)[0]).to(device)
+                    data, indicators = next(self.dl)
+                    data, indicators = data.to(device), indicators.to(device)
 
                     with self.accelerator.autocast():
-                        loss = self.model(data)
+                        loss = self.model(data, cond=indicators)
                         loss = loss / self.gradient_accumulate_every
                         total_loss += loss.item()
 
@@ -438,11 +439,12 @@ class Trainer(object):
                     self.lr_scheduler.step()
 
         accelerator.print('Training complete.')
-
-    # Allow user to pass in external data.
+    
+    # Allow external data, i.e. potential streaming data
     def train_on_batch(
             self,
             data: torch.Tensor,
+            cond: Optional[torch.Tensor] = None,
             use_wandb=True,
             splits=1,  # number of splits to split the batch into
             **kwargs,
@@ -451,16 +453,21 @@ class Trainer(object):
         device = accelerator.device
         data = data.to(device)
 
+        if cond is not None:
+            cond = cond.to(device)
+
         total_loss = 0.
+
         if splits == 1:
             with self.accelerator.autocast():
-                loss = self.model(data, **kwargs)
+                loss = self.model(data, cond=cond, **kwargs)
                 total_loss += loss.item()
             self.accelerator.backward(loss)
         else:
             assert splits > 1 and data.shape[0] % splits == 0
             split_data = torch.split(data, data.shape[0] // splits)
-
+            if cond is not None:
+                split_cond = torch.split(cond, cond.shape[0] // splits)
             for idx, d in enumerate(split_data):
                 with self.accelerator.autocast():
                     # Split condition as well
@@ -471,12 +478,13 @@ class Trainer(object):
                         else:
                             new_kwargs[k] = v
 
-                    loss = self.model(d, **new_kwargs)
+                    loss = self.model(d, cond=split_cond[idx] if cond is not None else None, **new_kwargs)
                     loss = loss / splits
                     total_loss += loss.item()
                 self.accelerator.backward(loss)
 
         accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
+
         if use_wandb:
             wandb.log({
                 'step': self.step,

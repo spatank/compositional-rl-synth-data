@@ -38,6 +38,7 @@ def load_single_composuite_dataset(base_path, dataset_type, robot, obj, obst, ta
 
     return data_dict
 
+
 @gin.configurable
 def load_multiple_composuite_datasets(base_path, dataset_type, robots, objs, obsts, tasks):
 
@@ -83,9 +84,7 @@ def transitions_dataset(dataset):
     next_obs_ = []
     action_ = []
     reward_ = []
-    done_ = []
-
-    episode_step = 0
+    terminal_ = []
 
     for i in range(N - 1):
 
@@ -95,25 +94,22 @@ def transitions_dataset(dataset):
         reward = dataset['rewards'][i].astype(np.float32)
         done_bool = bool(dataset['terminals'][i])
         final_timestep = dataset['timeouts'][i]
-
-        if done_bool or final_timestep:
-            episode_step = 0
+        terminal = done_bool or final_timestep
 
         obs_.append(obs)
         next_obs_.append(new_obs)
         action_.append(action)
         reward_.append(reward)
-        done_.append(done_bool)
-
-        episode_step += 1
+        terminal_.append(terminal)
 
     return {
         'observations': np.array(obs_),
         'actions': np.array(action_),
         'next_observations': np.array(next_obs_),
         'rewards': np.array(reward_),
-        'terminals': np.array(done_),
+        'terminals': np.array(terminal_),
     }
+
 
 @gin.configurable
 def make_inputs(dataset, modelled_terminals=True):
@@ -137,6 +133,33 @@ def make_inputs(dataset, modelled_terminals=True):
         inputs[:, -1] = terminals
     
     return inputs
+
+
+def remove_indicator_vectors(data, env):
+    obs_dim = env.obs_dim 
+    action_dim = env.action_dim
+    dims = env.modality_dims
+
+    start_index = sum([dim[0] for key, dim in dims.items() if key in ['object-state', 'obstacle-state', 'goal-state']])
+    end_index = start_index + sum([dim[0] for key, dim in dims.items() if key in ['object_id', 'robot_id', 'obstacle_id', 'subtask_id']])
+
+    def remove_indicator_dims(data, start, end):
+        indicators_ = data[:, start:end]
+        data_ = np.delete(data, slice(start, end), axis=1)
+        return data_, indicators_
+
+    observations = data[:, :obs_dim]
+    observations, obs_indicators = remove_indicator_dims(observations, start_index, end_index)
+    actions = data[:, obs_dim:obs_dim + action_dim]
+    rewards = data[:, obs_dim + action_dim:obs_dim + action_dim + 1]
+    next_observations = data[:, obs_dim + action_dim + 1:2*obs_dim + action_dim + 1]
+    next_observations, _ = remove_indicator_dims(next_observations, start_index, end_index)
+    terminals = data[:, -1:]
+    data = np.hstack([observations, actions, rewards, next_observations, terminals])
+    
+    return data, obs_indicators
+
+
 
 # Convert diffusion samples back to (s, a, r, s') format.
 @gin.configurable
