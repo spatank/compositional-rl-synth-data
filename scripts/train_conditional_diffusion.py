@@ -73,7 +73,8 @@ if __name__ == '__main__':
     print('Building training data.')
     inputs = make_inputs(combined_transitions_datasets)
     print('Input shape before removing task indicators:', inputs.shape)
-    env = composuite.make(args.robots, args.objs, args.obsts, args.tasks, use_task_id_obs=True, ignore_done=False)
+    env = composuite.make(args.robots[0], args.objs[0], args.obsts[0], args.tasks[0], 
+                          use_task_id_obs=True, ignore_done=False)
     inputs, indicators = remove_indicator_vectors(inputs, env)
     print('Input shape after removing task indicators:', inputs.shape)
 
@@ -112,4 +113,3 @@ if __name__ == '__main__':
             next_observations=next_obs,
             terminals=terminals
         )
-        
