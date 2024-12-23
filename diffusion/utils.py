@@ -8,6 +8,8 @@ from itertools import product
 import os
 import h5py
 import gin
+import composuite
+import matplotlib.pyplot as plt
 import gym
 import numpy as np
 from tqdm import tqdm
@@ -160,6 +162,17 @@ def remove_indicator_vectors(data, env):
     return data, obs_indicators
 
 
+def get_task_indicator(robot, obj, obst, task):
+
+    env = composuite.make(robot, obj, obst, task, use_task_id_obs=True, ignore_done=False)
+    dims = env.modality_dims
+    start_index = sum([dim[0] for key, dim in dims.items() if key in ['object-state', 'obstacle-state', 'goal-state']])
+    end_index = start_index + sum([dim[0] for key, dim in dims.items() if key in ['object_id', 'robot_id', 'obstacle_id', 'subtask_id']])
+    obs = env.reset()
+    task_indicator = obs[start_index:end_index]
+
+    return task_indicator
+
 
 # Convert diffusion samples back to (s, a, r, s') format.
 @gin.configurable
@@ -239,6 +252,7 @@ class SimpleDiffusionGenerator:
     def sample(
             self,
             num_samples: int,
+            cond: None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         assert num_samples % self.sample_batch_size == 0, 'num_samples must be a multiple of sample_batch_size'
         num_batches = num_samples // self.sample_batch_size
@@ -249,10 +263,14 @@ class SimpleDiffusionGenerator:
         terminals = []
         for i in range(num_batches):
             print(f'Generating split {i + 1} of {num_batches}.')
+            if cond is not None:
+                cond = torch.from_numpy(cond).float().to(self.diffusion.device)
+                cond = cond.unsqueeze(0).expand(self.sample_batch_size, -1)
             sampled_outputs = self.diffusion.sample(
                 batch_size=self.sample_batch_size,
                 num_sample_steps=self.num_sample_steps,
                 clamp=self.clamp_samples,
+                cond=cond
             )
             sampled_outputs = sampled_outputs.cpu().numpy()
 
