@@ -400,13 +400,19 @@ class Trainer(object):
                 total_loss = 0.
 
                 for _ in range(self.gradient_accumulate_every):
-                    data, indicators = next(self.dl)
-                    data, indicators = data.to(device), indicators.to(device)
-
-                    with self.accelerator.autocast():
-                        loss = self.model(data, cond=indicators)
-                        loss = loss / self.gradient_accumulate_every
-                        total_loss += loss.item()
+                    if self.model.net.conditional:
+                        data, cond = next(self.dl)
+                        data, cond = data.to(device), cond.to(device)
+                        with self.accelerator.autocast():
+                            loss = self.model(data, cond=cond)
+                            loss = loss / self.gradient_accumulate_every
+                            total_loss += loss.item()
+                    else:
+                        data = (next(self.dl)[0]).to(device)
+                        with self.accelerator.autocast():
+                            loss = self.model(data)
+                            loss = loss / self.gradient_accumulate_every
+                            total_loss += loss.item()
 
                     self.accelerator.backward(loss)
 

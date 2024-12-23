@@ -15,8 +15,8 @@ python /home/spatank/compositional-rl-synth-data/scripts/train_diffusion.py \
     --base_results_folder /home/spatank/compositional-rl-synth-data/results \
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
-    --robots IIWA \
-    --objs Box Dumbbell \
+    --robots Jaco \
+    --objs Box Hollowbox \
     --obsts None \
-    --tasks Push \
+    --tasks Shelf \
     --seed 42
