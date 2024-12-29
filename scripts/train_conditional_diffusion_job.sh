@@ -15,8 +15,7 @@ python /home/spatank/compositional-rl-synth-data/scripts/train_conditional_diffu
     --base_results_folder /home/spatank/compositional-rl-synth-data/results \
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
-    --robots Panda \
-    --objs Box Dumbbell Plate Hollowbox \
-    --obsts None GoalWall ObjectDoor ObjectWall \
-    --tasks PickPlace Push Shelf Trashcan \
+    --experiment_type smallscale \
+    --element IIWA \
+    --num_train 4 \
     --seed 42

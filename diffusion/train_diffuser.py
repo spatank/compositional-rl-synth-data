@@ -15,10 +15,13 @@ from diffusion.utils import *
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
+    
     parser.add_argument('--dataset', type=str, default='halfcheetah-medium-replay-v2')
-    parser.add_argument('--gin_config_files', nargs='*', type=str, default=['config/resmlp_denoiser.gin'])
+    parser.add_argument('--gin_config_files', nargs='*', type=str, default=[])
     parser.add_argument('--gin_params', nargs='*', type=str, default=[])
+
     # wandb config
     parser.add_argument('--wandb-project', type=str, default="offline-rl-diffusion")
     parser.add_argument('--wandb-entity', type=str, default="")

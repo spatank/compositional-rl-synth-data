@@ -4,6 +4,7 @@ from collections import defaultdict
 import torch
 import wandb
 import numpy as np
+import pickle
 import gin
 from diffusion.utils import *
 from diffusion.elucidated_diffusion import Trainer
@@ -21,11 +22,9 @@ if __name__ == '__main__':
 
     # Environment
     parser.add_argument('--dataset_type', type=str, required=True, help='Dataset type (e.g., expert data).')
-    parser.add_argument('--robots', nargs='+', type=str, required=True, help='List of robots.')
-    parser.add_argument('--objs', nargs='+', type=str, required=True, help='List of objects.')
-    parser.add_argument('--obsts', nargs='+', type=str, required=True, help='List of obstacles.')
-    parser.add_argument('--tasks', nargs='+', type=str, required=True, help='List of tasks.')
-    parser.add_argument('--exclude', nargs='+', type=str, default=[], help='List of environments to exclude.')
+    parser.add_argument('--experiment_type', type=str, required=True, help='CompoSuite experiment type.', default='default')
+    parser.add_argument('--element', type=str, required=False, help='CompoSuite element.')
+    parser.add_argument('--num_train', type=int, required=True, help='Number of CompoSuite tasks.')
 
     parser.add_argument('--use_gpu', action='store_true', default=True, help='Use GPU if available.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -50,30 +49,39 @@ if __name__ == '__main__':
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
 
-    exclude_set = set()
-    if args.exclude:
-        exclude_set = {tuple(item.split('-')) for item in args.exclude}
-    combinations = list(product(args.robots, args.objs, args.obsts, args.tasks))
-    combinations_subset = [combination for combination in combinations if combination not in exclude_set]
+    if args.experiment_type == 'default':
+        train_tasks, _ = composuite.sample_tasks(experiment_type='default', num_train=args.num_train)
+    if args.experiment_type == 'smallscale':
+        element = args.element
+        train_tasks, _ = composuite.sample_tasks(experiment_type='smallscale', 
+                                                 smallscale_elem=args.element, num_train=args.num_train)
+    if args.experiment_type == 'holdout':
+        train_tasks, _ = composuite.sample_tasks(experiment_type='holdout', 
+                                                 holdout_elem=args.element, num_train=args.num_train)
+        
+    with open(results_folder / "tasks.pkl", 'wb') as file:
+        pickle.dump(train_tasks, file)
+
     datasets = []
-    for combination in tqdm(combinations_subset, desc="Loading data"):
-        print('Loading:', combination)
-        robot, obj, obst, task = combination
-        datasets.append(load_single_composuite_dataset(args.base_data_path, args.dataset_type, robot, obj, obst, task))
-    
+    for task in tqdm(train_tasks, desc="Loading data"):
+        print('Loading:', task)
+        robot, obj, obst, subtask = task
+        datasets.append(load_single_composuite_dataset(args.base_data_path, args.dataset_type, robot, obj, obst, subtask))
     datasets = [transitions_dataset(dataset) for dataset in datasets]
 
     combined_data_dict = defaultdict(list)
-
     for idx, data in enumerate(datasets):
         for key in data.keys():
             combined_data_dict[key].append(data[key])
 
     combined_transitions_datasets = {key: np.concatenate(values, axis=0) for key, values in combined_data_dict.items()}
     print('Building training data.')
+
     inputs = make_inputs(combined_transitions_datasets)
     print('Input shape before removing task indicators:', inputs.shape)
-    env = composuite.make(args.robots[0], args.objs[0], args.obsts[0], args.tasks[0], 
+
+    robot, obj, obst, subtask = train_tasks[0]
+    env = composuite.make(robot, obj, obst, subtask, 
                           use_task_id_obs=True, ignore_done=False)
     inputs, indicators = remove_indicator_vectors(inputs, env)
     print('Input shape after removing task indicators:', inputs.shape)
@@ -95,18 +103,18 @@ if __name__ == '__main__':
     trainer = Trainer(diffusion, dataset, results_folder=str(results_folder))
     trainer.train()
 
-    for robot, obj, obst, task in combinations:
-        print('Generating synthetic data:', robot, obj, obst, task)
-        task_folder = results_folder / f"{robot}_{obj}_{obst}_{task}"
-        task_folder.mkdir(parents=True, exist_ok=True)
+    for robot, obj, obst, subtask in train_tasks:
+        print('Generating synthetic data:', robot, obj, obst, subtask)
+        subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
+        subtask_folder.mkdir(parents=True, exist_ok=True)
 
-        task_indicator = get_task_indicator(robot, obj, obst, task)
-        env = composuite.make(robot, obj, obst, task, use_task_id_obs=False, ignore_done=False)
+        subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
+        env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=False, ignore_done=False)
         generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
-        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=100000, cond=task_indicator)
+        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=100000, cond=subtask_indicator)
 
         np.savez_compressed(
-            task_folder / 'samples.npz',
+            subtask_folder / 'samples.npz',
             observations=obs,
             actions=actions,
             rewards=rewards,
