@@ -17,7 +17,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import wandb
 
-from CORL.shared.buffer import DiffusionConfig
+# from CORL.shared.buffer import DiffusionConfig
 
 TensorBatch = List[torch.Tensor]
 
@@ -25,13 +25,13 @@ TensorBatch = List[torch.Tensor]
 @dataclass
 class TrainConfig:
     # wandb project name
-    project: str = "CORL"
+    project: str = ""
     # wandb group name
-    group: str = "TD3_BC-D4RL"
+    group: str = ""
     # wandb run name
-    name: str = "TD3_BC"
+    name: str = ""
     # training dataset and evaluation environment
-    env: str = "halfcheetah-medium-expert-v2"
+    env: str = ""
     # coefficient for the Q-function in actor loss
     alpha: float = 2.5
     # discount factor
@@ -50,7 +50,7 @@ class TrainConfig:
     # total gradient updates during training
     max_timesteps: int = 50000
     # maximum size of the replay buffer
-    buffer_size: int = 2_000_000
+    buffer_size: int = 2000000
     # training batch size
     batch_size: int = 256
     # whether to normalize states
@@ -70,9 +70,9 @@ class TrainConfig:
     # training random seed
     seed: int = 0
     # training device
-    device: str = "cuda"
+    device: str = "cpu"
     # diffusion config
-    diffusion: DiffusionConfig = field(default_factory=DiffusionConfig)
+    # diffusion: DiffusionConfig = field(default_factory=DiffusionConfig)
     # network size
     network_width: int = 256
     network_depth: int = 2
@@ -213,7 +213,7 @@ def eval_actor(
     env.seed(seed)
     actor.eval()
     episode_rewards = []
-    for _ in tqdm(range(n_episodes), desc="Evaluating actor"):
+    for _ in tqdm(range(n_episodes), desc="Evaluating actor."):
         state, done = env.reset(), False
         episode_reward = 0.0
         while not done:

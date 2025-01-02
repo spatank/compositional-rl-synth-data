@@ -5,12 +5,16 @@ import torch
 import wandb
 import numpy as np
 import gin
+import pickle
 from diffusion.utils import *
-from diffusion.elucidated_diffusion import Trainer
-from diffusion.train_diffuser import SimpleDiffusionGenerator
 import composuite
+from diffusion.utils import *
+from CORL.algorithms.offline.td3_bc import *
+from CORL.shared.buffer import *
+from CORL.shared.logger import *
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--base_data_path', type=str, required=True, help='Base path to datasets.')
@@ -21,11 +25,9 @@ if __name__ == '__main__':
 
     # Environment
     parser.add_argument('--dataset_type', type=str, required=True, help='Dataset type (e.g., expert data).')
-    parser.add_argument('--robots', nargs='+', type=str, required=True, help='List of robots.')
-    parser.add_argument('--objs', nargs='+', type=str, required=True, help='List of objects.')
-    parser.add_argument('--obsts', nargs='+', type=str, required=True, help='List of obstacles.')
-    parser.add_argument('--tasks', nargs='+', type=str, required=True, help='List of tasks.')
-    parser.add_argument('--exclude', nargs='+', type=str, default=[], help='List of environments to exclude.')
+    parser.add_argument('--experiment_type', type=str, required=True, help='CompoSuite experiment type.', default='default')
+    parser.add_argument('--element', type=str, required=False, help='CompoSuite element.')
+    parser.add_argument('--num_train', type=int, required=True, help='Number of CompoSuite tasks.')
 
     parser.add_argument('--use_gpu', action='store_true', default=True, help='Use GPU if available.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -40,9 +42,9 @@ if __name__ == '__main__':
 
     base_results_path = pathlib.Path(args.base_results_folder)
     idx = 1
-    while (base_results_path / f"cluster_multidata_{idx}").exists():
+    while (base_results_path / f"offline_{idx}").exists():
         idx += 1
-    results_folder = base_results_path / f"cluster_multidata_{idx}"
+    results_folder = base_results_path / f"offline_{idx}"
     results_folder.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(args.seed)
@@ -50,26 +52,64 @@ if __name__ == '__main__':
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
 
-    exclude_set = set()
-    if args.exclude:
-        exclude_set = {tuple(item.split('-')) for item in args.exclude}
-    combinations = list(product(args.robots, args.objs, args.obsts, args.tasks))
-    combinations_subset = [combination for combination in combinations if combination not in exclude_set]
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if args.use_gpu:
+        torch.cuda.manual_seed(args.seed)
+
+    if args.experiment_type == 'default':
+        train_tasks, _ = composuite.sample_tasks(experiment_type='default', num_train=args.num_train)
+    if args.experiment_type == 'smallscale':
+        element = args.element
+        train_tasks, _ = composuite.sample_tasks(experiment_type='smallscale', 
+                                                 smallscale_elem=args.element, num_train=args.num_train)
+    if args.experiment_type == 'holdout':
+        train_tasks, _ = composuite.sample_tasks(experiment_type='holdout', 
+                                                 holdout_elem=args.element, num_train=args.num_train)
+        
+    with open(results_folder / "tasks.pkl", 'wb') as file:
+        pickle.dump(train_tasks, file)
+
     datasets = []
-    for combination in tqdm(combinations_subset, desc="Loading data"):
-        print('Loading:', combination)
-        robot, obj, obst, task = combination
-        datasets.append(load_single_composuite_dataset(args.base_data_path, args.dataset_type, robot, obj, obst, task))
-    
+    for task in tqdm(train_tasks, desc="Loading data"):
+        print('Loading:', task)
+        robot, obj, obst, subtask = task
+        datasets.append(load_single_composuite_dataset(args.base_data_path, args.dataset_type, robot, obj, obst, subtask))
     datasets = [transitions_dataset(dataset) for dataset in datasets]
 
     combined_data_dict = defaultdict(list)
-
     for idx, data in enumerate(datasets):
         for key in data.keys():
             combined_data_dict[key].append(data[key])
 
     combined_transitions_datasets = {key: np.concatenate(values, axis=0) for key, values in combined_data_dict.items()}
+
+    robot, obj, obst, subtask = train_tasks[0]
+    env = composuite.make(robot, obj, obst, subtask, 
+                          use_task_id_obs=True, ignore_done=False)
+    state_mean, state_std = compute_mean_std(combined_transitions_datasets["observations"], eps=1e-3)
+    env = wrap_env(env, state_mean=state_mean, state_std=state_std)
+
+    config = TrainConfig()
+
+    config.device = "cuda"
+    config.env = "iiwa-box-none-push"
+    config.diffusion.path = "/Users/shubhankar/Developer/compositional-rl-synth-data/results/Diffusion/IIWA_Box_None_Push/samples.npz"
+
+    replay_buffer = prepare_replay_buffer(
+        state_dim=state_dim,
+        action_dim=action_dim,
+        buffer_size=config.buffer_size,
+        dataset=dataset,
+        env_name=config.env,
+        device=config.device,
+        reward_normalizer=RewardNormalizer(dataset, config.env) if config.normalize_reward else None,
+        state_normalizer=StateNormalizer(state_mean, state_std),
+        diffusion_config=config.diffusion
+        )
+
+
+
     print('Building training data.')
     inputs = make_inputs(combined_transitions_datasets)
     inputs = torch.from_numpy(inputs).float()

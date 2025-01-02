@@ -39,9 +39,9 @@ if __name__ == '__main__':
 
     base_results_path = pathlib.Path(args.base_results_folder)
     idx = 1
-    while (base_results_path / f"cluster_multidata_{idx}").exists():
+    while (base_results_path / f"cond_diff_{idx}").exists():
         idx += 1
-    results_folder = base_results_path / f"cluster_multidata_{idx}"
+    results_folder = base_results_path / f"cond_diff_{idx}"
     results_folder.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(args.seed)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
         env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=False, ignore_done=False)
         generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
-        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=100000, cond=subtask_indicator)
+        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
 
         np.savez_compressed(
             subtask_folder / 'samples.npz',

@@ -39,9 +39,9 @@ if __name__ == '__main__':
 
     base_results_path = pathlib.Path(args.base_results_folder)
     idx = 1
-    while (base_results_path / f"cluster_multidata_{idx}").exists():
+    while (base_results_path / f"diff_{idx}").exists():
         idx += 1
-    results_folder = base_results_path / f"cluster_multidata_{idx}"
+    results_folder = base_results_path / f"diff_{idx}"
     results_folder.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(args.seed)
