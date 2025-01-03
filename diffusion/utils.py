@@ -137,29 +137,26 @@ def make_inputs(dataset, modelled_terminals=True):
     return inputs
 
 
-def remove_indicator_vectors(data, env):
-    obs_dim = env.obs_dim 
-    action_dim = env.action_dim
-    dims = env.modality_dims
+def remove_indicator_vectors(robot, obj, obst, task, dataset):
 
+    env = composuite.make(robot, obj, obst, task, use_task_id_obs=True, ignore_done=False)
+    dataset = dataset.copy()
+
+    dims = env.modality_dims
     start_index = sum([dim[0] for key, dim in dims.items() if key in ['object-state', 'obstacle-state', 'goal-state']])
     end_index = start_index + sum([dim[0] for key, dim in dims.items() if key in ['object_id', 'robot_id', 'obstacle_id', 'subtask_id']])
 
     def remove_indicator_dims(data, start, end):
         indicators_ = data[:, start:end]
-        data_ = np.delete(data, slice(start, end), axis=1)
+        data_ = np.delete(data, np.arange(start, end), axis=1)
         return data_, indicators_
 
-    observations = data[:, :obs_dim]
-    observations, obs_indicators = remove_indicator_dims(observations, start_index, end_index)
-    actions = data[:, obs_dim:obs_dim + action_dim]
-    rewards = data[:, obs_dim + action_dim:obs_dim + action_dim + 1]
-    next_observations = data[:, obs_dim + action_dim + 1:2*obs_dim + action_dim + 1]
-    next_observations, _ = remove_indicator_dims(next_observations, start_index, end_index)
-    terminals = data[:, -1:]
-    data = np.hstack([observations, actions, rewards, next_observations, terminals])
+    observations, obs_indicators = remove_indicator_dims(dataset['observations'], start_index, end_index)
+    dataset['observations'] = observations
+    next_observations, _ = remove_indicator_dims(dataset['next_observations'], start_index, end_index)
+    dataset['next_observations'] = next_observations
     
-    return data, obs_indicators
+    return dataset, obs_indicators
 
 
 def get_task_indicator(robot, obj, obst, task):
@@ -238,7 +235,7 @@ class SimpleDiffusionGenerator:
             env: gym.Env,
             ema_model,
             num_sample_steps: int = 128,
-            sample_batch_size: int = 100000,
+            sample_batch_size: int = 500000,
     ):
         self.env = env
         self.diffusion = ema_model
@@ -254,18 +251,22 @@ class SimpleDiffusionGenerator:
             num_samples: int,
             cond: None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        
         assert num_samples % self.sample_batch_size == 0, 'num_samples must be a multiple of sample_batch_size'
+
+        if cond is not None:
+            cond = torch.from_numpy(cond).float().to(self.diffusion.device)
+            cond = cond.unsqueeze(0).expand(self.sample_batch_size, -1)
+
         num_batches = num_samples // self.sample_batch_size
         observations = []
         actions = []
         rewards = []
         next_observations = []
         terminals = []
+
         for i in range(num_batches):
             print(f'Generating split {i + 1} of {num_batches}.')
-            if cond is not None:
-                cond = torch.from_numpy(cond).float().to(self.diffusion.device)
-                cond = cond.unsqueeze(0).expand(self.sample_batch_size, -1)
             sampled_outputs = self.diffusion.sample(
                 batch_size=self.sample_batch_size,
                 num_sample_steps=self.num_sample_steps,

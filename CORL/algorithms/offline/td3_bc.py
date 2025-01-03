@@ -213,7 +213,7 @@ def eval_actor(
     env.seed(seed)
     actor.eval()
     episode_rewards = []
-    for _ in tqdm(range(n_episodes), desc="Evaluating actor."):
+    for _ in tqdm(range(n_episodes), desc="Evaluating actor"):
         state, done = env.reset(), False
         episode_reward = 0.0
         while not done:

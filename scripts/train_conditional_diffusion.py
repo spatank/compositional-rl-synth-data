@@ -75,16 +75,13 @@ if __name__ == '__main__':
             combined_data_dict[key].append(data[key])
 
     combined_transitions_datasets = {key: np.concatenate(values, axis=0) for key, values in combined_data_dict.items()}
-    print('Building training data.')
-
-    inputs = make_inputs(combined_transitions_datasets)
-    print('Input shape before removing task indicators:', inputs.shape)
-
+    
+    print('Removing indicator vectors.')
     robot, obj, obst, subtask = train_tasks[0]
-    env = composuite.make(robot, obj, obst, subtask, 
-                          use_task_id_obs=True, ignore_done=False)
-    inputs, indicators = remove_indicator_vectors(inputs, env)
-    print('Input shape after removing task indicators:', inputs.shape)
+    combined_transitions_datasets, indicators = remove_indicator_vectors(robot, obj, obst, subtask, combined_transitions_datasets)
+    print('Building training data.')
+    inputs = make_inputs(combined_transitions_datasets)
+    print('Data shape:', inputs.shape)
 
     inputs = torch.from_numpy(inputs).float()
     indicators = torch.from_numpy(indicators).float()
@@ -111,7 +108,7 @@ if __name__ == '__main__':
         subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
         env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=False, ignore_done=False)
         generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
-        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
+        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=5000000, cond=subtask_indicator)
 
         np.savez_compressed(
             subtask_folder / 'samples.npz',
