@@ -354,6 +354,13 @@ class Trainer(object):
                 self.opt,
                 train_num_steps
             )
+        elif lr_scheduler == 'cosine_restarts':
+            print('Using cosine learning rate scheduler with warm restarts.')
+            self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+                optimizer=self.opt,
+                T_0=int(0.1 * train_num_steps),
+                eta_min=1e-5
+            )
         else:
             self.lr_scheduler = None
 

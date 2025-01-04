@@ -12,10 +12,10 @@ source /home/spatank/compositional-rl-synth-data/venv/bin/activate
 
 python /home/spatank/compositional-rl-synth-data/scripts/train_diffusion.py \
     --base_data_path /mnt/kostas-graid/datasets/spatank \
-    --base_results_folder /home/spatank/compositional-rl-synth-data/results/diffusion \
+    --base_results_folder /home/spatank/compositional-rl-synth-data/local_results/diffusion \
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
     --experiment_type smallscale \
     --element IIWA \
-    --num_train 4 \
+    --num_train 1 \
     --seed 42

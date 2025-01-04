@@ -235,7 +235,7 @@ class SimpleDiffusionGenerator:
             env: gym.Env,
             ema_model,
             num_sample_steps: int = 128,
-            sample_batch_size: int = 500000,
+            sample_batch_size: int = 100000,
     ):
         self.env = env
         self.diffusion = ema_model
@@ -249,7 +249,7 @@ class SimpleDiffusionGenerator:
     def sample(
             self,
             num_samples: int,
-            cond: None,
+            cond=None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         
         assert num_samples % self.sample_batch_size == 0, 'num_samples must be a multiple of sample_batch_size'
