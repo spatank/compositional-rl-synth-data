@@ -137,14 +137,12 @@ def make_inputs(dataset, modelled_terminals=True):
     return inputs
 
 
-def remove_indicator_vectors(robot, obj, obst, task, dataset):
+def remove_indicator_vectors(modality_dims, dataset):
 
-    env = composuite.make(robot, obj, obst, task, use_task_id_obs=True, ignore_done=False)
     dataset = dataset.copy()
 
-    dims = env.modality_dims
-    start_index = sum([dim[0] for key, dim in dims.items() if key in ['object-state', 'obstacle-state', 'goal-state']])
-    end_index = start_index + sum([dim[0] for key, dim in dims.items() if key in ['object_id', 'robot_id', 'obstacle_id', 'subtask_id']])
+    start_index = sum([dim[0] for key, dim in modality_dims.items() if key in ['object-state', 'obstacle-state', 'goal-state']])
+    end_index = start_index + sum([dim[0] for key, dim in modality_dims.items() if key in ['object_id', 'robot_id', 'obstacle_id', 'subtask_id']])
 
     def remove_indicator_dims(data, start, end):
         indicators_ = data[:, start:end]

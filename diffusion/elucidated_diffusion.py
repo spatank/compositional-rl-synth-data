@@ -359,6 +359,7 @@ class Trainer(object):
             self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
                 optimizer=self.opt,
                 T_0=int(0.1 * train_num_steps),
+                T_mult=2,
                 eta_min=1e-5
             )
         else:

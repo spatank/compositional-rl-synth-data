@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 playground*
-
+*.txt
 configs
 .DS_Store
 Data

@@ -1,6 +1,6 @@
 import argparse
 import pathlib
-from collections import defaultdict
+import time
 import torch
 import wandb
 import numpy as np
@@ -50,41 +50,57 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(args.seed)
 
     if args.experiment_type == 'default':
-        train_tasks, _ = composuite.sample_tasks(experiment_type='default', num_train=args.num_train)
+        train_tasks, test_tasks = composuite.sample_tasks(experiment_type='default', num_train=args.num_train)
+        test_tasks = test_tasks[:12]
     if args.experiment_type == 'smallscale':
         element = args.element
-        train_tasks, _ = composuite.sample_tasks(experiment_type='smallscale', 
+        train_tasks, test_tasks = composuite.sample_tasks(experiment_type='smallscale', 
                                                  smallscale_elem=args.element, num_train=args.num_train)
     if args.experiment_type == 'holdout':
-        train_tasks, _ = composuite.sample_tasks(experiment_type='holdout', 
+        train_tasks, test_tasks = composuite.sample_tasks(experiment_type='holdout', 
                                                  holdout_elem=args.element, num_train=args.num_train)
         
-    with open(results_folder / "tasks.pkl", 'wb') as file:
+    with open(results_folder / "train_tasks.pkl", 'wb') as file:
         pickle.dump(train_tasks, file)
 
-    datasets = []
+    with open(results_folder / "test_tasks.pkl", 'wb') as file:
+        pickle.dump(test_tasks, file)
+
+    representative_task = train_tasks[0]
+    robot, obj, obst, subtask = representative_task
+    representative_env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=False, ignore_done=False)
+    representative_indicators_env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=True, ignore_done=False)
+    modality_dims = representative_indicators_env.modality_dims
+
+    task_indicators_dict = {}
+
+    num_samples = 0
+    all_inputs = []
+    all_indicators = []
     for task in tqdm(train_tasks, desc="Loading data"):
-        print('Loading:', task)
         robot, obj, obst, subtask = task
-        datasets.append(load_single_composuite_dataset(args.base_data_path, args.dataset_type, robot, obj, obst, subtask))
-    datasets = [transitions_dataset(dataset) for dataset in datasets]
+        dataset = load_single_composuite_dataset(args.base_data_path, args.dataset_type, robot, obj, obst, subtask)
+        dataset = transitions_dataset(dataset)
+        dataset, indicators = remove_indicator_vectors(modality_dims, dataset)
+        task_indicators_dict[task] = indicators[0, :]
+        num_samples += dataset['observations'].shape[0]
+        inputs = make_inputs(dataset)
+        all_inputs.append(inputs)
+        all_indicators.append(indicators)
 
-    combined_data_dict = defaultdict(list)
-    for idx, data in enumerate(datasets):
-        for key in data.keys():
-            combined_data_dict[key].append(data[key])
+    num_features = all_inputs[0].shape[1]
+    num_indicators = all_indicators[0].shape[1]
+    all_inputs_matrix = np.empty((num_samples, num_features), dtype=all_inputs[0].dtype)
+    all_indicators_matrix = np.empty((num_samples, num_indicators), dtype=all_indicators[0].dtype)
 
-    combined_transitions_datasets = {key: np.concatenate(values, axis=0) for key, values in combined_data_dict.items()}
-    
-    print('Removing indicator vectors.')
-    robot, obj, obst, subtask = train_tasks[0]
-    combined_transitions_datasets, indicators = remove_indicator_vectors(robot, obj, obst, subtask, combined_transitions_datasets)
-    print('Building training data.')
-    inputs = make_inputs(combined_transitions_datasets)
-    print('Data shape:', inputs.shape)
+    current_index = 0
+    for inputs, indicators in tqdm(zip(all_inputs, all_indicators), desc="Filling processed inputs and indicators matrices"):
+        all_inputs_matrix[current_index:current_index + inputs.shape[0]] = inputs
+        all_indicators_matrix[current_index:current_index + indicators.shape[0]] = indicators
+        current_index += inputs.shape[0]
 
-    inputs = torch.from_numpy(inputs).float()
-    indicators = torch.from_numpy(indicators).float()
+    inputs = torch.from_numpy(all_inputs_matrix).float()
+    indicators = torch.from_numpy(all_indicators_matrix).float()
     dataset = torch.utils.data.TensorDataset(inputs, indicators)
 
     diffusion = construct_diffusion_model(inputs=inputs, cond_dim=indicators.shape[1])
@@ -100,15 +116,56 @@ if __name__ == '__main__':
     trainer = Trainer(diffusion, dataset, results_folder=str(results_folder))
     trainer.train()
 
-    for robot, obj, obst, subtask in train_tasks:
-        print('Generating synthetic data:', robot, obj, obst, subtask)
+    for robot, obj, obst, subtask in test_tasks:
+        print('Generating synthetic data for test tasks:', robot, obj, obst, subtask)
         subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
-        subtask_folder.mkdir(parents=True, exist_ok=True)
+        retry_count = 0
+        while not subtask_folder.exists():
+            try:
+                subtask_folder.mkdir(parents=True, exist_ok=True)
+            except Exception as exception:
+                retry_count += 1
+                if retry_count >= 5:
+                    raise RuntimeError(f"Failed to create directory {subtask_folder}.") from exception
+                time.sleep(1)  # wait before retrying
 
         subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
-        env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=False, ignore_done=False)
-        generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
-        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=2500000, cond=subtask_indicator)
+        generator = SimpleDiffusionGenerator(env=representative_env, ema_model=trainer.ema.ema_model)
+        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
+
+        if not subtask_folder.exists():
+            print(f'Folder missing unexpectedly: {subtask_folder}')
+            subtask_folder.mkdir(parents=True, exist_ok=True)
+
+        np.savez_compressed(
+            subtask_folder / 'samples.npz',
+            observations=obs,
+            actions=actions,
+            rewards=rewards,
+            next_observations=next_obs,
+            terminals=terminals
+        )
+
+    for idx, (robot, obj, obst, subtask) in enumerate(train_tasks):
+        print('Generating synthetic data for train tasks:', robot, obj, obst, subtask)
+        subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
+        retry_count = 0
+        while not subtask_folder.exists():
+            try:
+                subtask_folder.mkdir(parents=True, exist_ok=True)
+            except Exception as exception:
+                retry_count += 1
+                if retry_count >= 5:
+                    raise RuntimeError(f"Failed to create directory {subtask_folder}.") from exception
+                time.sleep(1)  # wait before retrying
+
+        subtask_indicator = task_indicators_dict[(robot, obj, obst, subtask)]
+        generator = SimpleDiffusionGenerator(env=representative_env, ema_model=trainer.ema.ema_model)
+        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
+
+        if not subtask_folder.exists():
+            print(f'Folder missing unexpectedly: {subtask_folder}')
+            subtask_folder.mkdir(parents=True, exist_ok=True)
 
         np.savez_compressed(
             subtask_folder / 'samples.npz',
