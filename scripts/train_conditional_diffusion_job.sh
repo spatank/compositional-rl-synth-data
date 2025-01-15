@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=diffusion_training
 #SBATCH --output=slurm/%A_%a_train_conditional_diffusion.out
-#SBATCH --mem=448G
+#SBATCH --mem=320G
 #SBATCH --gpus=1
 #SBATCH --cpus-per-gpu=8
 #SBATCH --time=72:00:00
@@ -16,6 +16,6 @@ python /home/spatank/compositional-rl-synth-data/scripts/train_conditional_diffu
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
     --experiment_type default \
-    --num_train 244 \
+    --num_train 144 \
     --seed 42
     
