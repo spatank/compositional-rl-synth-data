@@ -1,12 +1,11 @@
 #!/bin/bash
 
 remote_host="spatank@grasp-login2.seas.upenn.edu"
-base_remote_folder="/mnt/kostas-graid/datasets/spatank/results/diffusion/cond_diff_22"
-local_destination="/Users/shubhankar/Developer/compositional-rl-synth-data/cluster_results/diffusion/cond_diff_22/test"
+base_remote_folder="/mnt/kostas-graid/datasets/spatank/results/diffusion/cond_diff_24"
+local_destination="/Users/shubhankar/Developer/compositional-rl-synth-data/cluster_results/diffusion/cond_diff_24/test"
 
 mkdir -p "$local_destination"
 
-# Ensure the file doesn't have an empty last line
 while IFS= read -r folder || [[ -n "$folder" ]]; do
     remote_folder="$base_remote_folder/$folder"
     folder_name=$(basename "$remote_folder")

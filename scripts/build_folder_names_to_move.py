@@ -1,7 +1,7 @@
 import os
 import pickle
 
-run_name = 'cond_diff_22'
+run_name = 'cond_diff_24'
 base_folder = '/mnt/kostas-graid/datasets/spatank/results/diffusion/'
 run_folder = os.path.join(base_folder, run_name)
 
