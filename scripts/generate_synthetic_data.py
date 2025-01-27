@@ -40,6 +40,7 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
+    device = torch.device('cuda' if args.use_gpu and torch.cuda.is_available() else 'cpu')
 
     checkpoint_path = os.path.join(results_folder, 'model-100000.pt')
 
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     dataset = torch.utils.data.TensorDataset(inputs, indicators)
 
     diffusion = construct_diffusion_model(inputs=inputs, cond_dim=indicators.shape[1])
-    checkpoint = torch.load(checkpoint_path, weights_only=True)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
     ema_dict = checkpoint['ema']
     ema_dict = {k: v for k, v in ema_dict.items() if k.startswith('ema_model')}
     ema_dict = {k.replace('ema_model.', ''): v for k, v in ema_dict.items()}

@@ -65,6 +65,7 @@ class TrainConfig:
     n_episodes: int = 10
     # path for checkpoints saving, optional
     checkpoints_path: Optional[str] = None
+    save_checkpoints: bool = True
     # file name for loading a model, optional
     load_model: str = ""
     # training random seed

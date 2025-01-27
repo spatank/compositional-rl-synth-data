@@ -16,7 +16,7 @@ python /home/spatank/compositional-rl-synth-data/scripts/generate_synthetic_data
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
     --run 20 \
-    --num_samples 10000000 \
+    --num_samples 5000000 \
     --robot IIWA \
     --obj Box \
     --obst None \
