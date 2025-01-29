@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=diffusion_training
 #SBATCH --output=slurm/%A_%a_train_conditional_diffusion.out
-#SBATCH --mem=400G
+#SBATCH --mem=320G
 #SBATCH --gpus=1
 #SBATCH --cpus-per-gpu=8
 #SBATCH --time=96:00:00
