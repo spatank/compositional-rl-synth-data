@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import d4rl
+# import d4rl
 import gym
 import numpy as np
 import pyrallis
@@ -31,14 +31,14 @@ ENVS_WITH_GOAL = ("antmaze", "pen", "door", "hammer", "relocate")
 @dataclass
 class TrainConfig:
     # Experiment
-    device: str = "cuda"
-    env: str = "antmaze-umaze-v2"  # OpenAI gym environment name
+    device: str = "cpu"
+    env: str = ""
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     eval_seed: int = 0  # Eval environment seed
-    eval_freq: int = int(5e4)  # How often (time steps) we evaluate
+    eval_freq: int = 1000  # How often (time steps) we evaluate
     n_episodes: int = 100  # How many episodes run during evaluation
-    offline_iterations: int = int(1e6)  # Number of offline updates
-    online_iterations: int = int(1e6)  # Number of online updates
+    offline_iterations: int = int(1e5)  # Number of offline updates
+    online_iterations: int = int(1e5)  # Number of online updates
     checkpoints_path: Optional[str] = None  # Save path
     load_model: str = ""  # Model load file name, "" doesn't load
     # IQL
@@ -54,13 +54,14 @@ class TrainConfig:
     iql_deterministic: bool = False  # Use deterministic actor
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
+    log_every: int = 1000
     vf_lr: float = 3e-4  # V function learning rate
     qf_lr: float = 3e-4  # Critic learning rate
     actor_lr: float = 3e-4  # Actor learning rate
-    # Wandb logging
-    project: str = "CORL"
-    group: str = "IQL-D4RL"
-    name: str = "IQL"
+    # WandB logging
+    project: str = ""
+    group: str = ""
+    name: str = ""
 
     def __post_init__(self):
         self.name = f"{self.name}-{self.env}-{str(uuid.uuid4())[:8]}"

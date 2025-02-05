@@ -167,6 +167,26 @@ class ReplayBuffer(ReplayBufferBase):
         self._dones[self._pointer: self._pointer + batch_size] = dones
         self._pointer += batch_size
 
+    def add_transition(
+        self,
+        state: np.ndarray,
+        action: np.ndarray,
+        reward: float,
+        next_state: np.ndarray,
+        done: bool,
+    ):
+        if self.full:
+            return
+        # Use this method to add new data into the replay buffer during fine-tuning.
+        self._states[self._pointer] = self._to_tensor(state)
+        self._actions[self._pointer] = self._to_tensor(action)
+        self._rewards[self._pointer] = self._to_tensor(reward)
+        self._next_states[self._pointer] = self._to_tensor(next_state)
+        self._dones[self._pointer] = self._to_tensor(done)
+
+        self._pointer = (self._pointer + 1) % self._buffer_size
+        self._size = min(self._size + 1, self._buffer_size)
+
 
 def prepare_replay_buffer(
         state_dim: int,
