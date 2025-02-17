@@ -9,6 +9,7 @@ __pycache__/
 playground*
 *.txt
 *.pdf
+*.csv
 *.gif
 configs
 .DS_Store

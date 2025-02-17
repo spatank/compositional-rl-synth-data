@@ -51,7 +51,8 @@ if __name__ == '__main__':
 
     if args.experiment_type == 'default':
         train_tasks, test_tasks = composuite.sample_tasks(experiment_type='default', num_train=args.num_train)
-        test_tasks = test_tasks[:12]
+        # test_tasks = test_tasks[:12]
+        train_tasks = [("Jaco", "Box", "None", "Trashcan")]
     if args.experiment_type == 'smallscale':
         element = args.element
         train_tasks, test_tasks = composuite.sample_tasks(experiment_type='smallscale', 
@@ -116,35 +117,35 @@ if __name__ == '__main__':
     trainer = Trainer(diffusion, dataset, results_folder=str(results_folder))
     trainer.train()
 
-    for robot, obj, obst, subtask in test_tasks:
-        print('Generating synthetic data for test tasks:', robot, obj, obst, subtask)
-        subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
-        retry_count = 0
-        while not subtask_folder.exists():
-            try:
-                subtask_folder.mkdir(parents=True, exist_ok=True)
-            except Exception as exception:
-                retry_count += 1
-                if retry_count >= 5:
-                    raise RuntimeError(f"Failed to create directory {subtask_folder}.") from exception
-                time.sleep(1)  # wait before retrying
+    # for robot, obj, obst, subtask in test_tasks:
+    #     print('Generating synthetic data for test tasks:', robot, obj, obst, subtask)
+    #     subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
+    #     retry_count = 0
+    #     while not subtask_folder.exists():
+    #         try:
+    #             subtask_folder.mkdir(parents=True, exist_ok=True)
+    #         except Exception as exception:
+    #             retry_count += 1
+    #             if retry_count >= 5:
+    #                 raise RuntimeError(f"Failed to create directory {subtask_folder}.") from exception
+    #             time.sleep(1)  # wait before retrying
 
-        subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
-        generator = SimpleDiffusionGenerator(env=representative_env, ema_model=trainer.ema.ema_model)
-        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
+    #     subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
+    #     generator = SimpleDiffusionGenerator(env=representative_env, ema_model=trainer.ema.ema_model)
+    #     obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
 
-        if not subtask_folder.exists():
-            print(f'Folder missing unexpectedly: {subtask_folder}')
-            subtask_folder.mkdir(parents=True, exist_ok=True)
+    #     if not subtask_folder.exists():
+    #         print(f'Folder missing unexpectedly: {subtask_folder}')
+    #         subtask_folder.mkdir(parents=True, exist_ok=True)
 
-        np.savez_compressed(
-            subtask_folder / 'samples.npz',
-            observations=obs,
-            actions=actions,
-            rewards=rewards,
-            next_observations=next_obs,
-            terminals=terminals
-        )
+    #     np.savez_compressed(
+    #         subtask_folder / 'samples.npz',
+    #         observations=obs,
+    #         actions=actions,
+    #         rewards=rewards,
+    #         next_observations=next_obs,
+    #         terminals=terminals
+    #     )
 
     for idx, (robot, obj, obst, subtask) in enumerate(train_tasks):
         print('Generating synthetic data for train tasks:', robot, obj, obst, subtask)

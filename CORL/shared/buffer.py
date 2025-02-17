@@ -92,6 +92,7 @@ class ReplayBuffer(ReplayBufferBase):
         )
         self._buffer_size = buffer_size
         self._pointer = 0
+        self._size = 0
 
         self._states = torch.zeros(
             (buffer_size, state_dim), dtype=torch.float32, device=device
@@ -132,11 +133,17 @@ class ReplayBuffer(ReplayBufferBase):
         self._rewards[:n_transitions] = self._to_tensor(data["rewards"][..., None])
         self._next_states[:n_transitions] = self._to_tensor(data["next_observations"])
         self._dones[:n_transitions] = self._to_tensor(data["terminals"][..., None])
-        self._pointer = n_transitions
+
+        self._size += n_transitions
+        # self._pointer = min(self._size, n_transitions)
+        self._pointer = self._size % self._buffer_size
+
+        # self._pointer = n_transitions
         print(f"Dataset size: {n_transitions}")
 
     def _sample(self, batch_size: int, **kwargs) -> TensorBatch:
-        indices = np.random.randint(0, self._pointer, size=batch_size)
+        indices = np.random.randint(0, self._size, size=batch_size)
+        # indices = np.random.randint(0, self._pointer, size=batch_size)
         states = self._states[indices]
         actions = self._actions[indices]
         rewards = self._rewards[indices]
@@ -175,8 +182,6 @@ class ReplayBuffer(ReplayBufferBase):
         next_state: np.ndarray,
         done: bool,
     ):
-        if self.full:
-            return
         # Use this method to add new data into the replay buffer during fine-tuning.
         self._states[self._pointer] = self._to_tensor(state)
         self._actions[self._pointer] = self._to_tensor(action)
@@ -186,7 +191,6 @@ class ReplayBuffer(ReplayBufferBase):
 
         self._pointer = (self._pointer + 1) % self._buffer_size
         self._size = min(self._size + 1, self._buffer_size)
-
 
 def prepare_replay_buffer(
         state_dim: int,

@@ -3,7 +3,7 @@
 import sys
 import time
 
-import dmcgym
+# import dmcgym
 import gin
 import gym
 import numpy as np
@@ -15,10 +15,15 @@ from redq.utils.bias_utils import log_bias_evaluation
 from redq.utils.logx import EpochLogger
 from redq.utils.run_utils import setup_logger_kwargs
 
-from synther.diffusion.elucidated_diffusion import REDQTrainer
-from synther.diffusion.train_diffuser import SimpleDiffusionGenerator
-from synther.diffusion.utils import construct_diffusion_model
-from synther.online.redq_rlpd_agent import REDQRLPDAgent
+from diffusion.elucidated_diffusion import REDQTrainer
+from diffusion.train_diffuser import SimpleDiffusionGenerator
+from diffusion.utils import construct_diffusion_model
+from online.redq_rlpd_agent import REDQRLPDAgent
+
+# from synther.diffusion.elucidated_diffusion import REDQTrainer
+# from synther.diffusion.train_diffuser import SimpleDiffusionGenerator
+# from synther.diffusion.utils import construct_diffusion_model
+# from synther.online.redq_rlpd_agent import REDQRLPDAgent
 
 
 @gin.configurable

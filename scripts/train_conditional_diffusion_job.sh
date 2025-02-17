@@ -16,6 +16,6 @@ python /home/spatank/compositional-rl-synth-data/scripts/train_conditional_diffu
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
     --experiment_type default \
-    --num_train 232 \
+    --num_train 1 \
     --seed 42
     
