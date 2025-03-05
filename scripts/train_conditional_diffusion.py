@@ -20,6 +20,8 @@ if __name__ == '__main__':
     parser.add_argument('--gin_config_files', nargs='*', type=str, default=['config/diffusion.gin'])
     parser.add_argument('--gin_params', nargs='*', type=str, default=[], help='Additional gin parameters.')
 
+    parser.add_argument('--compositional', type=str, default='False', help='Use compositional denoiser network.')
+
     # Environment
     parser.add_argument('--dataset_type', type=str, required=True, help='Dataset type (e.g., expert data).')
     parser.add_argument('--experiment_type', type=str, required=True, help='CompoSuite experiment type.', default='default')
@@ -104,7 +106,8 @@ if __name__ == '__main__':
     indicators = torch.from_numpy(all_indicators_matrix).float()
     dataset = torch.utils.data.TensorDataset(inputs, indicators)
 
-    diffusion = construct_diffusion_model(inputs=inputs, cond_dim=indicators.shape[1])
+    compositional = args.compositional == 'True'
+    diffusion = construct_diffusion_model(inputs=inputs, compositional=compositional, cond_dim=indicators.shape[1])
 
     wandb.init(
         project=args.wandb_project,

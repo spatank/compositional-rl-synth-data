@@ -7,7 +7,6 @@ split_diffusion_samples.modelled_terminals = %modelled_terminals
 split_diffusion_samples.terminal_threshold = 0.5
 
 construct_diffusion_model.normalizer_type = 'standard'
-construct_diffusion_model.compositional = True
 # No normalization on the terminals.
 construct_diffusion_model.disable_terminal_norm = True
 
