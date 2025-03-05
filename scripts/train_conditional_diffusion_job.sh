@@ -11,8 +11,8 @@
 source /home/spatank/compositional-rl-synth-data/venv/bin/activate
 
 python /home/spatank/compositional-rl-synth-data/scripts/train_conditional_diffusion.py \
-    --base_data_path /mnt/kostas-graid/datasets/spatank \
-    --base_results_folder /mnt/kostas-graid/datasets/spatank/results/diffusion \
+    --base_data_path /home/spatank/compositional-rl-synth-data/data \
+    --base_results_folder /home/spatank/compositional-rl-synth-data/results/diffusion \
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
     --dataset_type expert \
     --experiment_type default \

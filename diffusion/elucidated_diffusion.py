@@ -286,7 +286,7 @@ class Trainer(object):
         super().__init__()
         self.accelerator = Accelerator(
             split_batches=split_batches,
-            mixed_precision='fp16' if fp16 else 'no'
+            mixed_precision='fp16' if fp16 else 'no',
         )
         self.accelerator.native_amp = amp
         self.model = diffusion_model

@@ -39,9 +39,9 @@ if __name__ == '__main__':
 
     base_results_path = pathlib.Path(args.base_results_folder)
     idx = 1
-    while (base_results_path / f"cond_diff_{idx}").exists():
+    while (base_results_path / f"comp_diff_{idx}").exists():
         idx += 1
-    results_folder = base_results_path / f"cond_diff_{idx}"
+    results_folder = base_results_path / f"comp_diff_{idx}"
     results_folder.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(args.seed)
@@ -50,21 +50,22 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(args.seed)
 
     if args.experiment_type == 'default':
-        train_tasks, test_tasks = composuite.sample_tasks(experiment_type='default', num_train=args.num_train)
-        test_tasks = test_tasks[:12]
+        # train_tasks, test_tasks = composuite.sample_tasks(experiment_type='default', num_train=args.num_train)
+        # test_tasks = test_tasks[:12]
+        train_tasks = [('IIWA', 'Box', 'GoalWall', 'PickPlace')]
     if args.experiment_type == 'smallscale':
         element = args.element
         train_tasks, test_tasks = composuite.sample_tasks(experiment_type='smallscale', 
-                                                 smallscale_elem=args.element, num_train=args.num_train)
+                                                          smallscale_elem=args.element, num_train=args.num_train)
     if args.experiment_type == 'holdout':
         train_tasks, test_tasks = composuite.sample_tasks(experiment_type='holdout', 
-                                                 holdout_elem=args.element, num_train=args.num_train)
+                                                          holdout_elem=args.element, num_train=args.num_train)
         
     with open(results_folder / "train_tasks.pkl", 'wb') as file:
         pickle.dump(train_tasks, file)
 
-    with open(results_folder / "test_tasks.pkl", 'wb') as file:
-        pickle.dump(test_tasks, file)
+    # with open(results_folder / "test_tasks.pkl", 'wb') as file:
+    #     pickle.dump(test_tasks, file)
 
     representative_task = train_tasks[0]
     robot, obj, obst, subtask = representative_task
@@ -116,35 +117,35 @@ if __name__ == '__main__':
     trainer = Trainer(diffusion, dataset, results_folder=str(results_folder))
     trainer.train()
 
-    for robot, obj, obst, subtask in test_tasks:
-        print('Generating synthetic data for test tasks:', robot, obj, obst, subtask)
-        subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
-        retry_count = 0
-        while not subtask_folder.exists():
-            try:
-                subtask_folder.mkdir(parents=True, exist_ok=True)
-            except Exception as exception:
-                retry_count += 1
-                if retry_count >= 5:
-                    raise RuntimeError(f"Failed to create directory {subtask_folder}.") from exception
-                time.sleep(1)  # wait before retrying
+    # for robot, obj, obst, subtask in test_tasks:
+    #     print('Generating synthetic data for test tasks:', robot, obj, obst, subtask)
+    #     subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
+    #     retry_count = 0
+    #     while not subtask_folder.exists():
+    #         try:
+    #             subtask_folder.mkdir(parents=True, exist_ok=True)
+    #         except Exception as exception:
+    #             retry_count += 1
+    #             if retry_count >= 5:
+    #                 raise RuntimeError(f"Failed to create directory {subtask_folder}.") from exception
+    #             time.sleep(1)  # wait before retrying
 
-        subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
-        generator = SimpleDiffusionGenerator(env=representative_env, ema_model=trainer.ema.ema_model)
-        obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
+    #     subtask_indicator = get_task_indicator(robot, obj, obst, subtask)
+    #     generator = SimpleDiffusionGenerator(env=representative_env, ema_model=trainer.ema.ema_model)
+    #     obs, actions, rewards, next_obs, terminals = generator.sample(num_samples=1000000, cond=subtask_indicator)
 
-        if not subtask_folder.exists():
-            print(f'Folder missing unexpectedly: {subtask_folder}')
-            subtask_folder.mkdir(parents=True, exist_ok=True)
+    #     if not subtask_folder.exists():
+    #         print(f'Folder missing unexpectedly: {subtask_folder}')
+    #         subtask_folder.mkdir(parents=True, exist_ok=True)
 
-        np.savez_compressed(
-            subtask_folder / 'samples.npz',
-            observations=obs,
-            actions=actions,
-            rewards=rewards,
-            next_observations=next_obs,
-            terminals=terminals
-        )
+    #     np.savez_compressed(
+    #         subtask_folder / 'samples.npz',
+    #         observations=obs,
+    #         actions=actions,
+    #         rewards=rewards,
+    #         next_observations=next_obs,
+    #         terminals=terminals
+    #     )
 
     for idx, (robot, obj, obst, subtask) in enumerate(train_tasks):
         print('Generating synthetic data for train tasks:', robot, obj, obst, subtask)
