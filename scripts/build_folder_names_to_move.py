@@ -1,8 +1,8 @@
 import os
 import pickle
 
-run_name = 'cond_diff_24'
-base_folder = '/mnt/kostas-graid/datasets/spatank/results/diffusion/'
+run_name = 'non_comp_diff_2'
+base_folder = '/home/spatank/compositional-rl-synth-data/results/diffusion/'
 run_folder = os.path.join(base_folder, run_name)
 
 train_task_file = os.path.join(run_folder, 'train_tasks.pkl')
