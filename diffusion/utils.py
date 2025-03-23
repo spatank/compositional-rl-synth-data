@@ -201,14 +201,14 @@ def split_diffusion_samples(
 def construct_diffusion_model(
         inputs: torch.Tensor,
         normalizer_type: str,
-        compositional: bool = False,
+        denoiser: str,
         disable_terminal_norm: bool = False,
         skip_dims: List[int] = [],
         cond_dim: Optional[int] = None,
 ) -> ElucidatedDiffusion:
     event_dim = inputs.shape[1]
 
-    if compositional:
+    if denoiser == 'compositional':
         model = CompositionalResidualMLPDenoiser(d_in=event_dim, cond_dim=cond_dim)
     else:
         model = ResidualMLPDenoiser(d_in=event_dim, cond_dim=cond_dim)
