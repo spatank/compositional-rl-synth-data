@@ -47,13 +47,14 @@ if __name__ == '__main__':
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
     
-    exp_name, train_task_list, _, test_task_list = get_task_list(
+    exp_name, train_task_list, _, _ = get_task_list(
         args.task_list_path,
         args.dataset_type,
         args.experiment_type,
         None,  # holdout element
         args.seed,
     )
+    train_task_list = [tuple(task) for task in train_task_list]
     train_task_list = train_task_list[:args.num_train]
     representative_task = train_task_list[0]
     robot, obj, obst, subtask = representative_task

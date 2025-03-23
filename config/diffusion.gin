@@ -12,8 +12,8 @@ construct_diffusion_model.disable_terminal_norm = True
 
 # Network.
 ResidualMLPDenoiser.dim_t = 128
-ResidualMLPDenoiser.mlp_width = 4096
-ResidualMLPDenoiser.num_layers = 10
+ResidualMLPDenoiser.mlp_width = 2048
+ResidualMLPDenoiser.num_layers = 6
 ResidualMLPDenoiser.learned_sinusoidal_cond = False
 ResidualMLPDenoiser.random_fourier_features = True
 ResidualMLPDenoiser.learned_sinusoidal_dim = 16
@@ -36,7 +36,7 @@ ElucidatedDiffusion.S_noise = 1.003
 Trainer.train_batch_size = 1024
 Trainer.small_batch_size = 256
 Trainer.train_lr = 3e-4
-Trainer.lr_scheduler = 'cosine_restarts'
+Trainer.lr_scheduler = 'cosine'
 Trainer.weight_decay = 0
 Trainer.train_num_steps = 100000
 Trainer.save_and_sample_every = 100000
