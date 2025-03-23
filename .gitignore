@@ -14,6 +14,7 @@ playground*
 configs
 .DS_Store
 Data
+dev
 d3rlpy_data
 local_results
 cluster_results*
