@@ -169,6 +169,42 @@ def get_task_indicator(robot, obj, obst, task):
     return task_indicator
 
 
+def identify_special_dimensions(data):
+
+    integer_dims = []
+    constant_dims = []
+    
+    for i in range(data.shape[1]):
+        column = data[:, i]
+        if np.all(np.equal(column, np.round(column))):
+            integer_dims.append(i)
+        elif np.all(column == column[0]):
+            constant_dims.append(i)
+    
+    return integer_dims, constant_dims
+
+
+def process_special_dimensions(synthetic_dataset, integer_dims, constant_dims):
+
+    processed_dataset = {k: v.copy() for k, v in synthetic_dataset.items()}
+    
+    for key in ['observations', 'next_observations']:
+        # Round integer dimensions
+        if integer_dims:
+            processed_dataset[key][:, integer_dims] = np.round(
+                synthetic_dataset[key][:, integer_dims]
+            )
+        
+        # Round constant dimensions to 2 decimal places
+        if constant_dims:
+            processed_dataset[key][:, constant_dims] = np.round(
+                synthetic_dataset[key][:, constant_dims], 
+                decimals=2
+            )
+    
+    return processed_dataset
+
+
 # Convert diffusion samples back to (s, a, r, s') format.
 @gin.configurable
 def split_diffusion_samples(
