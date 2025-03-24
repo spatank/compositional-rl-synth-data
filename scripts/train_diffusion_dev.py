@@ -106,7 +106,7 @@ if __name__ == '__main__':
         subtask_folder = results_folder / f"{robot}_{obj}_{obst}_{subtask}"
         subtask_folder.mkdir(parents=True, exist_ok=True)
 
-        env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=True, ignore_done=False)
+        env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=False, ignore_done=False)
         generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
         observations, actions, rewards, next_observations, terminals = generator.sample(num_samples=1000000)
 
