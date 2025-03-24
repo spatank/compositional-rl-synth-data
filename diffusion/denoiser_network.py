@@ -126,7 +126,8 @@ class ResidualMLPDenoiser(nn.Module):
             layer_norm=layer_norm,
         )
         if cond_dim is not None:
-            self.proj = nn.Linear(d_in + cond_dim, dim_t)
+            self.cond_emb = nn.Linear(cond_dim, dim_t)
+            self.proj = nn.Linear(d_in, dim_t)
             self.conditional = True
         else:
             self.proj = nn.Linear(d_in, dim_t)
@@ -148,11 +149,13 @@ class ResidualMLPDenoiser(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, timesteps: torch.Tensor, cond=None) -> torch.Tensor:
-        if self.conditional:
-            assert cond is not None
-            x = torch.cat((x, cond), dim=-1)
         time_embed = self.time_mlp(timesteps)
         x = self.proj(x) + time_embed
+        if self.conditional:
+            assert cond is not None
+            cond_emb = self.cond_emb(cond)
+            x = x + cond_emb
+            # x = torch.cat((x, cond), dim=-1)
         return self.residual_mlp(x)
 
 
