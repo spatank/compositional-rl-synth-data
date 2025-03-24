@@ -11,7 +11,7 @@ construct_diffusion_model.normalizer_type = 'standard'
 construct_diffusion_model.disable_terminal_norm = True
 
 # Network.
-ResidualMLPDenoiser.dim_t = 128
+ResidualMLPDenoiser.dim_t = 164  # 128
 ResidualMLPDenoiser.mlp_width = 2048
 ResidualMLPDenoiser.num_layers = 6
 ResidualMLPDenoiser.learned_sinusoidal_cond = False

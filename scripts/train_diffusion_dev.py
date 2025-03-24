@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
         env = composuite.make(robot, obj, obst, subtask, use_task_id_obs=True, ignore_done=False)
         generator = SimpleDiffusionGenerator(env=env, ema_model=trainer.ema.ema_model)
-        observations, actions, rewards, next_observations, terminals = generator.sample(num_samples=100000)
+        observations, actions, rewards, next_observations, terminals = generator.sample(num_samples=1000000)
 
         np.savez_compressed(
             subtask_folder / 'samples.npz',
