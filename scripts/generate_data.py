@@ -5,6 +5,7 @@ import time
 import numpy as np
 import gin
 from diffusion.utils import *
+from accelerate import Accelerator
 import composuite
 from offline_compositional_rl_datasets.utils.data_utils import *
 
@@ -36,9 +37,10 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
-    device = torch.device('cuda' if args.use_gpu and torch.cuda.is_available() else 'cpu')
+    accelerator = Accelerator()
+    device = accelerator.device
 
-    exp_name, _, test_task_list, _ = get_task_list(
+    exp_name, _, _, test_task_list = get_task_list(
         args.task_list_path,
         args.dataset_type,
         args.experiment_type,
@@ -65,6 +67,7 @@ if __name__ == '__main__':
         model = CompositionalResidualMLPDenoiser(d_in=inputs.shape[1], cond_dim=indicators.shape[1])
     else:
         model = ResidualMLPDenoiser(d_in=inputs.shape[1], cond_dim=indicators.shape[1])
+    model = accelerator.prepare(model)
 
     # Load checkpoint.
     checkpoint_path = os.path.join(results_folder, 'model-100000.pt')
@@ -83,10 +86,13 @@ if __name__ == '__main__':
     normalizer = normalizer_factory('standard', dummy_tensor, skip_dims=skip_dims)
     normalizer.mean = checkpoint['model']['normalizer.mean']  # overwrite initialized mean
     normalizer.std = checkpoint['model']['normalizer.std']  # overwrite initialized std
+    print('Means:', normalizer.mean)
+    print('Stds:', normalizer.std)
 
     # Create diffusion model.
     diffusion = ElucidatedDiffusion(net=model, normalizer=normalizer, event_shape=[inputs.shape[1]])
     diffusion.load_state_dict(ema_dict)
+    diffusion = accelerator.prepare(diffusion)
     diffusion.eval()
 
     # Generate synthetic data for test tasks.
@@ -114,7 +120,7 @@ if __name__ == '__main__':
         idx = 0
         while (subtask_folder / f'samples_{idx}.npz').exists():
             idx += 1
-            
+
         np.savez_compressed(
             subtask_folder / f'samples_{idx}.npz',
             observations=obs,
