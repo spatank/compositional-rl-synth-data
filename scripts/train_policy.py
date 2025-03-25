@@ -3,7 +3,6 @@ import pathlib
 import torch
 import wandb
 import numpy as np
-import pickle
 import gin
 from diffusion.utils import *
 from diffusion.elucidated_diffusion import Trainer
@@ -13,10 +12,16 @@ from offline_compositional_rl_datasets.utils.data_utils import *
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--base_data_path', type=str, required=True, help='Base path to datasets.')
+    parser.add_argument('--base_agent_data_path', type=str, required=True, help='Base path to agent datasets.')
+    parser.add_argument('--base_synthetic_data_path', type=str, required=True, help='Base path to synthetic datasets.')
     parser.add_argument('--base_results_folder', type=str, required=True, help='Base path to results.')
-    parser.add_argument('--gin_config_files', nargs='*', type=str, default=['config/diffusion.gin'])
-    parser.add_argument('--gin_params', nargs='*', type=str, default=[], help='Additional gin parameters.')
+
+    parser.add_argument('--data_type', type=str, required=True, help='Agent vs. synthetic data.')
+    parser.add_argument('--seed', type=int, default=0, help='Random seed.')
+
+    parser.add_argument('--max_timesteps', type=int, default=50000, help='Number of training steps.')
+    parser.add_argument('--n_episodes', type=int, default=10, help='Number of evaluation episodes.')
+    parser.add_argument('--batch_size', type=int, default=1024, help='Batch size.')
     
     parser.add_argument('--denoiser', type=str, default='monolithic', help='Type of denoiser network.')
     parser.add_argument('--task_list_path', type=str, required=True, help='Path to task splits.')

@@ -106,7 +106,6 @@ class ResidualMLPDenoiser(nn.Module):
     def __init__(
         self,
         d_in: int,
-        dim_t: int = 128,
         mlp_width: int = 1024,
         num_layers: int = 6,
         learned_sinusoidal_cond: bool = False,
@@ -118,7 +117,7 @@ class ResidualMLPDenoiser(nn.Module):
     ):
         super().__init__()
         self.residual_mlp = ResidualMLP(
-            input_dim=dim_t,
+            input_dim=d_in,
             width=mlp_width,
             depth=num_layers,
             output_dim=d_in,
@@ -126,11 +125,9 @@ class ResidualMLPDenoiser(nn.Module):
             layer_norm=layer_norm,
         )
         if cond_dim is not None:
-            self.cond_emb = nn.Linear(cond_dim, dim_t)
-            self.proj = nn.Linear(d_in, dim_t)
+            self.cond_emb = nn.Linear(cond_dim, d_in)
             self.conditional = True
         else:
-            self.proj = nn.Linear(d_in, dim_t)
             self.conditional = False
 
         self.random_or_learned_sinusoidal_cond = learned_sinusoidal_cond or random_fourier_features
@@ -138,24 +135,27 @@ class ResidualMLPDenoiser(nn.Module):
             sinu_pos_emb = RandomOrLearnedSinusoidalPosEmb(learned_sinusoidal_dim, random_fourier_features)
             fourier_dim = learned_sinusoidal_dim + 1
         else:
-            sinu_pos_emb = SinusoidalPosEmb(dim_t)
-            fourier_dim = dim_t
+            sinu_pos_emb = SinusoidalPosEmb(d_in)
+            fourier_dim = d_in
 
         self.time_mlp = nn.Sequential(
             sinu_pos_emb,
-            nn.Linear(fourier_dim, dim_t),
+            nn.Linear(fourier_dim, d_in),
             nn.SiLU(),
-            nn.Linear(dim_t, dim_t)
+            nn.Linear(d_in, d_in)
         )
 
-    def forward(self, x: torch.Tensor, timesteps: torch.Tensor, cond=None) -> torch.Tensor:
-        time_embed = self.time_mlp(timesteps)
-        x = self.proj(x) + time_embed
+    def forward(
+            self,
+            x: torch.Tensor,
+            timesteps: torch.Tensor,
+            cond=None,
+    ) -> torch.Tensor:
         if self.conditional:
             assert cond is not None
-            cond_emb = self.cond_emb(cond)
-            x = x + cond_emb
-            # x = torch.cat((x, cond), dim=-1)
+            x = x + self.cond_emb(cond)
+        time_embed = self.time_mlp(timesteps)
+        x = x + time_embed
         return self.residual_mlp(x)
 
 

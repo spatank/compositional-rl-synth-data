@@ -3,7 +3,6 @@ import pathlib
 import torch
 import wandb
 import numpy as np
-import pickle
 import gin
 from diffusion.utils import *
 from diffusion.elucidated_diffusion import Trainer
@@ -11,27 +10,22 @@ import composuite
 from offline_compositional_rl_datasets.utils.data_utils import *
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
 
+    parser = argparse.ArgumentParser()
     parser.add_argument('--base_data_path', type=str, required=True, help='Base path to datasets.')
     parser.add_argument('--base_results_folder', type=str, required=True, help='Base path to results.')
     parser.add_argument('--gin_config_files', nargs='*', type=str, default=['config/diffusion.gin'])
     parser.add_argument('--gin_params', nargs='*', type=str, default=[], help='Additional gin parameters.')
-    
     parser.add_argument('--denoiser', type=str, default='monolithic', help='Type of denoiser network.')
     parser.add_argument('--task_list_path', type=str, required=True, help='Path to task splits.')
     parser.add_argument('--num_train', type=int, required=True, help='Number of training tasks.')
     parser.add_argument('--dataset_type', type=str, required=True, help='Dataset type (e.g., expert data).')
     parser.add_argument('--experiment_type', type=str, required=True, help='CompoSuite experiment type.', default='default')
     parser.add_argument('--element', type=str, required=False, help='CompoSuite element.')
-
     parser.add_argument('--use_gpu', action='store_true', default=True, help='Use GPU if available.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
-
     parser.add_argument('--wandb_project', type=str, default="diffusion_training")
-
     args = parser.parse_args()
-
     gin.parse_config_files_and_bindings(args.gin_config_files, args.gin_params)
 
     base_results_path = pathlib.Path(args.base_results_folder)
@@ -63,7 +57,6 @@ if __name__ == '__main__':
     modality_dims = representative_indicators_env.modality_dims
 
     task_indicators_dict = {}
-
     num_samples = 0
     all_inputs = []
     all_indicators = []

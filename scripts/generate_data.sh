@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=diffusion_training
-#SBATCH --output=slurm/%j_monolithic_train56_seed9.out
+#SBATCH --output=slurm/%j_generate_monolithic_train56_seed0.out
 #SBATCH --mem=224G
 #SBATCH --gpus=1
 #SBATCH --cpus-per-gpu=8
@@ -10,7 +10,7 @@
 
 source /home/spatank/compositional-rl-synth-data/venv/bin/activate
 
-python /home/spatank/compositional-rl-synth-data/scripts/train_diffusion.py \
+python /home/spatank/compositional-rl-synth-data/scripts/generate_data.py \
     --base_data_path /home/spatank/compositional-rl-synth-data/data \
     --base_results_folder /home/spatank/compositional-rl-synth-data/results/diffusion \
     --gin_config_files /home/spatank/compositional-rl-synth-data/config/diffusion.gin \
@@ -19,4 +19,5 @@ python /home/spatank/compositional-rl-synth-data/scripts/train_diffusion.py \
     --num_train 56 \
     --dataset_type expert \
     --experiment_type default \
-    --seed 9
+    --seed 0 \
+    --run 1
