@@ -17,11 +17,11 @@ DEFAULT_CONFIG = {
     'time': 2,
     'seed': 1,
     'denoiser': 'monolithic',
-    'num_train': 56,
+    'num_train': 98,
     'diffusion_training_run': 1,
     'task_list_seed': 0,
     'algorithm': 'td3_bc',
-    'dataset_type': 'expert'
+    'dataset_type': 'synthetic'
 }
 
 def create_job_name(config: Dict) -> str:
