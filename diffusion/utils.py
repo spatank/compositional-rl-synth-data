@@ -53,7 +53,7 @@ def load_multiple_composuite_datasets(base_path, dataset_type, robots, objs, obs
 
 
 def load_single_synthetic_dataset(base_path, robot, obj, obst, task):
-    data_path = os.path.join(base_path, f"{robot}_{obj}_{obst}_{task}", "samples.npz")
+    data_path = os.path.join(base_path, f"{robot}_{obj}_{obst}_{task}", "samples_0.npz")
     return dict(np.load(data_path))
 
 

@@ -21,7 +21,6 @@ if __name__ == '__main__':
     parser.add_argument('--num_train', type=int, required=True, help='Number of training tasks.')
     parser.add_argument('--dataset_type', type=str, required=True, help='Dataset type (e.g., expert data).')
     parser.add_argument('--experiment_type', type=str, required=True, help='CompoSuite experiment type.', default='default')
-    parser.add_argument('--element', type=str, required=False, help='CompoSuite element.')
     parser.add_argument('--use_gpu', action='store_true', default=True, help='Use GPU if available.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.add_argument('--wandb_project', type=str, default="diffusion_training")
