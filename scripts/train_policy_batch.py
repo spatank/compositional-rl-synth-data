@@ -4,7 +4,8 @@ from typing import List, Dict, Tuple
 from offline_compositional_rl_datasets.utils.data_utils import *
 
 # Base configuration
-BASE_PATH = '/home/spatank/compositional-rl-synth-data'
+# BASE_PATH = '/home/spatank/compositional-rl-synth-data'
+BASE_PATH = '/Users/shubhankar/Developer/compositional-rl-synth-data'
 TASK_LIST_PATH = f'{BASE_PATH}/offline_compositional_rl_datasets/_train_test_splits'
 SCRIPT_PATH = f'{BASE_PATH}/scripts/train_policy.py'
 DATA_PATH = f'{BASE_PATH}/data'
@@ -15,13 +16,13 @@ RESULTS_PATH = f'{BASE_PATH}/results/policies'
 DEFAULT_CONFIG = {
     'memory': 16,
     'time': 2,
-    'seed': 1,
+    'seed': 0,
     'denoiser': 'monolithic',
-    'num_train': 98,
+    'num_train': 56,
     'diffusion_training_run': 1,
     'task_list_seed': 0,
     'algorithm': 'td3_bc',
-    'dataset_type': 'synthetic'
+    'dataset_type': 'expert'
 }
 
 def create_job_name(config: Dict) -> str:
@@ -37,13 +38,21 @@ def create_job_name(config: Dict) -> str:
     obj = config['obj']
     obst = config['obst']
     subtask = config['subtask']
+    dataset_type = config['dataset_type']
 
-    job_name = (
-        f"{algorithm}_{seed}_"
-        f"{denoiser}_{task_list_seed}_"
-        f"{num_train}_{diffusion_training_run}_"
-        f"{robot}_{obj}_{obst}_{subtask}"
-    )
+    if dataset_type == 'synthetic':
+        job_name = (
+            f"{algorithm}_{seed}_"
+            f"{denoiser}_{task_list_seed}_"
+            f"{num_train}_{diffusion_training_run}_"
+            f"{robot}_{obj}_{obst}_{subtask}"
+        )
+    else:
+        job_name = (
+            f"{algorithm}_{seed}_"
+            f"tl_{task_list_seed}_"
+            f"{robot}_{obj}_{obst}_{subtask}"
+        )
     
     return job_name
     
@@ -138,8 +147,8 @@ def submit_jobs(configs: List[Dict]):
         with open(script_path, 'w') as f:
             f.write(script_content)
         print(f'Submitting job {i+1}/{len(configs)}: {config["robot"]}_{config["obj"]}_{config["obst"]}_{config["subtask"]}')
-        subprocess.run(["sbatch", script_path])
-        os.remove(script_path)
+        # subprocess.run(["sbatch", script_path])
+        # os.remove(script_path)
 
 if __name__ == '__main__':
     job_configs = generate_job_configs()

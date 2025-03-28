@@ -51,7 +51,7 @@ if __name__ == '__main__':
         task_results_folder = base_results_path / f"{synthetic_data_prefix}" / f"{task_suffix}"
         task_results_folder.mkdir(parents=True, exist_ok=True)
     else:
-        task_results_folder = base_results_path / args.dataset_type / task_suffix
+        task_results_folder = base_results_path / args.dataset_type / f"seed_{args.task_list_seed}" / task_suffix
         task_results_folder.mkdir(parents=True, exist_ok=True)
         
     np.random.seed(args.seed)
@@ -126,9 +126,9 @@ if __name__ == '__main__':
         wandb.init(
             mode="online",
             project=args.wandb_project,
-            group=f"{args.denoiser}_seed{args.seed}",  # group by denoiser type and seed
+            group=f"seed{args.seed}",  # group by seed
             name=f"{args.algorithm}_seed{args.seed}_{task_results_folder.name}",
-            tags=[args.denoiser, f"seed_{args.seed}", f"train_{args.num_train}", args.dataset_type],
+            tags=[f"seed_{args.seed}", args.dataset_type],
             config={
                 "dataset_type": args.dataset_type,
                 "robot": args.robot,
@@ -139,9 +139,7 @@ if __name__ == '__main__':
                 "seed": args.seed,
                 "max_timesteps": args.max_timesteps,
                 "batch_size": args.batch_size,
-                "denoiser": args.denoiser,
                 "task_list_seed": args.task_list_seed,
-                "num_train": args.num_train,
             }
         )
 

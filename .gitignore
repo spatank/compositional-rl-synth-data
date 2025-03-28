@@ -19,6 +19,8 @@ d3rlpy_data
 local_results
 cluster_results*
 wandb
+slurm
+policies_slurm
 requirements_cluster.txt
 *.png
 # contains files/folders to exclude when transfering to cluster
