@@ -50,7 +50,7 @@ class TrainConfig:
     tau: float = 0.005  # target network update rate
     beta: float = 3.0  # inverse temperature; small beta -> BC, large beta -> maximizing Q
     iql_tau: float = 0.7  # coefficient for asymmetric loss
-    iql_deterministic: bool = False  # use deterministic actor
+    iql_deterministic: bool = True  # use deterministic actor
     normalize: bool = True  # normalize states
     normalize_reward: bool = False  # normalize reward
     # W&B

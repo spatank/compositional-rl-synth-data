@@ -3,16 +3,8 @@ import subprocess
 from typing import List, Dict
 
 job_configs = [
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 0, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 1, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 2, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 3, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 4, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 5, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 6, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 7, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 8, 'memory': 256, 'time': 36},
-    {'denoiser': 'monolithic', 'num_train': 140, 'diffusion_run': 1, 'seed': 9, 'memory': 256, 'time': 36},
+    {'denoiser': 'monolithic', 'num_train': 224, 'diffusion_run': 1, 'seed': 8, 'memory': 256, 'time': 48},
+    {'denoiser': 'monolithic', 'num_train': 224, 'diffusion_run': 1, 'seed': 9, 'memory': 256, 'time': 48},
 ]
 
 BASE_PATH = '/home/spatank/compositional-rl-synth-data'

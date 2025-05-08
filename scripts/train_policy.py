@@ -75,8 +75,6 @@ if __name__ == '__main__':
                                                    obst=args.obst, task=args.subtask)
     agent_dataset, _ = remove_indicator_vectors(representative_task_env.modality_dims, transitions_dataset(agent_dataset))
 
-
-
     if args.dataset_type == 'synthetic':
         synthetic_data_path = os.path.join(args.base_synthetic_data_path, synthetic_data_prefix)
         synthetic_dataset = load_single_synthetic_dataset(base_path=synthetic_data_path, 

@@ -196,7 +196,6 @@ def eval_actor(
             state, reward, done, _ = env.step(action)
             episode_reward += reward
         episode_rewards.append(episode_reward)
-
     actor.train()
     return np.asarray(episode_rewards)
 

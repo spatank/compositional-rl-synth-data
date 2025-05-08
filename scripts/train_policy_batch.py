@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import List, Dict, Tuple
+from typing import List, Dict
 from offline_compositional_rl_datasets.utils.data_utils import *
 
 # Base configuration
@@ -14,15 +14,16 @@ RESULTS_PATH = f'{BASE_PATH}/results/policies'
 # Default job parameters
 DEFAULT_CONFIG = {
     'memory': 16,
-    'time': 2,
-    'seed': 1,
+    'time': 1,
+    'seeds': [0, 1, 2, 3, 4],  # multiple RL seeds
     'denoiser': 'monolithic',
     'num_train': 56,
     'diffusion_training_run': 1,
-    'task_list_seed': 0,
+    'task_list_seeds': [2],  # multiple task list seeds
     'algorithm': 'td3_bc',
-    'dataset_type': 'expert'
+    'dataset_type': 'synthetic'
 }
+
 
 def create_job_name(config: Dict) -> str:
     """Create a verbose job name from config parameters."""
@@ -55,33 +56,37 @@ def create_job_name(config: Dict) -> str:
     
     return job_name
     
-
 def generate_job_configs():
 
-    _, _, _, task_list = get_task_list(
-        TASK_LIST_PATH,
-        DEFAULT_CONFIG['dataset_type'],
-        'default',  # experiment_type
-        None,  # holdout element
-        DEFAULT_CONFIG['task_list_seed']
-    )
-    
     job_configs = []
-    for robot, obj, obst, subtask in task_list:
-        # Create a configuration for each task
-        config = DEFAULT_CONFIG.copy()
-        config.update({
-            'robot': robot,
-            'obj': obj,
-            'obst': obst,
-            'subtask': subtask
-        })
-        job_configs.append(config)
+    task_list_seeds = DEFAULT_CONFIG['task_list_seeds']
+    rl_seeds = DEFAULT_CONFIG['seeds']
+    
+    for task_list_seed in task_list_seeds:
+        _, _, _, task_list = get_task_list(
+            TASK_LIST_PATH,
+            DEFAULT_CONFIG['dataset_type'],
+            'default',  # experiment_type
+            None,  # holdout element
+            task_list_seed
+        )
+        
+        for robot, obj, obst, subtask in task_list:
+            for seed in rl_seeds:
+                config = DEFAULT_CONFIG.copy()
+                config['seed'] = seed
+                config['task_list_seed'] = task_list_seed
+                config.update({
+                    'robot': robot,
+                    'obj': obj,
+                    'obst': obst,
+                    'subtask': subtask
+                })
+                job_configs.append(config)
     
     return job_configs
 
 def generate_script(config: Dict) -> str:
-
     robot = config['robot']
     obj = config['obj']
     obst = config['obst']
@@ -102,7 +107,7 @@ def generate_script(config: Dict) -> str:
     script = (
         f'#!/bin/bash\n'
         f'#SBATCH --job-name={job_name}\n'
-        f'#SBATCH --output=policies_slurm/%j_{job_name}.out\n'
+        f'#SBATCH --output=policies_slurm_2/%j_{job_name}.out\n'
         f'#SBATCH --mem={memory}G\n'
         f'#SBATCH --gpus=1\n'
         f'#SBATCH --cpus-per-gpu=8\n'
@@ -138,14 +143,14 @@ def generate_script(config: Dict) -> str:
 
 def submit_jobs(configs: List[Dict]):
     """Generate and submit all jobs."""
-    os.makedirs('policies_slurm', exist_ok=True)
+    os.makedirs('policies_slurm_2', exist_ok=True)
     for i, config in enumerate(configs):
         job_name = create_job_name(config)
         script_path = f'job_{job_name}.sh'
         script_content = generate_script(config)
         with open(script_path, 'w') as f:
             f.write(script_content)
-        print(f'Submitting job {i+1}/{len(configs)}: {config["robot"]}_{config["obj"]}_{config["obst"]}_{config["subtask"]}')
+        print(f'Submitting job {i+1}/{len(configs)}: {job_name}')
         subprocess.run(["sbatch", script_path])
         os.remove(script_path)
 
