@@ -19,5 +19,5 @@ python /home/spatank/compositional-rl-synth-data/scripts/generate_data.py \
     --num_train 56 \
     --dataset_type expert \
     --experiment_type default \
-    --seed 4 \
+    --seed 0 \
     --run 1
